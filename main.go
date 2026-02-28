@@ -12,12 +12,12 @@ import (
 )
 
 func main() {
-	cfg, err := internal.LoadConfig("config.yaml")
+	cfg, err := internal.LoadConfig("config/config.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	st, err := internal.NewState("state.json")
+	st, err := internal.NewState("config/state.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func main() {
 		}()
 	}
 
-	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("image"))))
+	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
 	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
 
 	go func() {
