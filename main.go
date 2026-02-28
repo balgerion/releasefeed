@@ -68,7 +68,7 @@ func main() {
 		}()
 	}
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("image"))))
 	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
 
 	go func() {
