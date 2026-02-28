@@ -6,6 +6,8 @@ jobs:
     runs-on: docker
     container:
       image: docker:latest
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: checkout
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
