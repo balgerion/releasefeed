@@ -1,16 +1,22 @@
-on: 
- workflow_dispatch:
+on:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: docker
 
     container:
       image: docker:24-cli
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
+
+    services:
+      docker:
+        image: docker:24-dind
+        options: --privileged
+        env:
+          DOCKER_TLS_CERTDIR: ""
 
     env:
-      DOCKER_HOST: unix:///var/run/docker.sock
+      DOCKER_HOST: tcp://docker:2375   # <-- odnosi się do tego DinD, który runner tworzy
 
     steps:
       - run: apk add --no-cache git
