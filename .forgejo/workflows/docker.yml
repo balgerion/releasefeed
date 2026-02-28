@@ -4,6 +4,8 @@ on:
 jobs:
   build:
     runs-on: docker
+    container:
+      image: alpine:3.23.3
     services:
       docker:
         image: docker:24-dind
@@ -11,9 +13,9 @@ jobs:
         env:
           DOCKER_TLS_CERTDIR: ""
     env:
-      DOCKER_HOST: tcp://localhost:2375 
+      DOCKER_HOST: tcp://localhost:2375
     steps:
-      - run: apk add --no-cache git
+      - run: apt-get update && apt-get install -y git curl bash
       - run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
       - run: |
           docker info
