@@ -41,6 +41,7 @@ func main() {
 			normalized := make([]internal.Release, 0, len(releases))
 			for _, r := range releases {
 				r = internal.Normalize(r, f)
+				r.Image = f.Image
 				normalized = append(normalized, r)
 				if !st.Seen(r.ID) {
 					if internal.HasKeyword(r.Title+" "+r.Content, f.AlertKeywords) {
@@ -67,7 +68,8 @@ func main() {
 		}()
 	}
 
-	http.HandleFunc("/feed", internal.FeedHandler(cache))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
 
 	go func() {
 		log.Printf("listening on :%s", cfg.Server.Port)
