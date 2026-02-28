@@ -16,7 +16,7 @@ jobs:
           DOCKER_TLS_CERTDIR: ""
 
     env:
-      DOCKER_HOST: tcp://docker:2375   # <-- odnosi się do tego DinD, który runner tworzy
+      DOCKER_HOST: tcp://docker:2375 
 
     steps:
       - run: apk add --no-cache git
