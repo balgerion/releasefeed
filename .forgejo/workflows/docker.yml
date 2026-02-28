@@ -6,13 +6,6 @@ jobs:
     runs-on: docker
     container:
       image: docker:29.2.1-cli-alpine3.23
-    env:
-      DOCKER_HOST: unix:///var/run/docker.sock
-      DOCKER_BUILDKIT: 1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /mnt/git:/workspace
-    working-directory: /workspace
 
     steps:
       - name: Install deps
@@ -21,13 +14,15 @@ jobs:
       - name: Clone repo
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
 
-      - name: Setup buildx
+      - name: Setup Buildx
         run: |
           docker buildx create --use --name ci-builder || true
           docker buildx inspect --bootstrap
 
       - name: Build & push
         run: |
-          docker buildx build --platform linux/amd64 \
+          docker buildx build \
+            --platform linux/amd64 \
             -t git.balgeriada.com/balgerion/releasefeed:latest \
             --push .
+  
