@@ -5,6 +5,4 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - ./image:/app/image:ro
-      - ./state.json:/app/state.json
+      - ./config:/app/config
