@@ -4,33 +4,14 @@ on:
 jobs:
   build:
     runs-on: docker
-
     container:
-      image: docker:24
+      image: docker:24-cli
 
     env:
-      DOCKER_DAEMON_HOST: 10.0.35.2
-      DOCKER_HOST: tcp://10.0.35.2:2375
+      DOCKER_HOST: unix:///var/run/docker.sock
       DOCKER_BUILDKIT: 1
 
     steps:
-      - name: Sanity - check network reachability to DinD
-        run: |
-          echo "testing tcp connection to $DOCKER_DAEMON_HOST:2375"
-          for i in $(seq 1 20); do
-            if curl -fsS --max-time 2 "http://$DOCKER_DAEMON_HOST:2375/_ping" >/dev/null 2>&1; then
-              echo "docker daemon reachable"
-              break
-            fi
-            echo "wait... ($i)"
-            sleep 1
-            if [ "$i" -eq 20 ]; then
-              echo "ERROR: cannot reach docker daemon at $DOCKER_DAEMON_HOST:2375" >&2
-              curl -v "http://$DOCKER_DAEMON_HOST:2375" || true
-              exit 1
-            fi
-          done
-
       - name: Install deps
         run: |
           apt-get update
@@ -41,8 +22,6 @@ jobs:
 
       - name: Setup buildx
         run: |
-          docker --version
-          docker info || true
           docker buildx create --use --name ci-builder || true
           docker buildx inspect --bootstrap
 
