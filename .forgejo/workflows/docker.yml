@@ -11,7 +11,8 @@ jobs:
     steps:
       - name: checkout
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
-
+      - name: login
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login git.balgeriada.com -u "${{ secrets.REGISTRY_USER }}" --password-stdin
       - name: build and push
         run: |
           docker build -t git.balgeriada.com/balgerion/releasefeed:latest .
