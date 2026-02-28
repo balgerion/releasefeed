@@ -72,17 +72,22 @@ func escapeContent(s string) string {
 	return buf.String()
 }
 
-func FeedHandler(cache *Cache) http.HandlerFunc {
+func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		releases := cache.All()
 		entries := make([]atomEntry, 0, len(releases))
 		for _, rel := range releases {
+			body := ""
+			if rel.Image != "" {
+				body = `<img src="` + imageBaseURL + `/static/` + rel.Image + `" style="max-height:48px;margin-bottom:8px;"/><br/>`
+			}
+			body += escapeContent(rel.Content)
 			entries = append(entries, atomEntry{
 				Title:   "[" + rel.FeedName + "] " + rel.Title,
 				Link:    atomLink{Href: rel.URL},
 				ID:      rel.ID,
 				Updated: rel.PublishedAt.Format(time.RFC3339),
-				Content: atomContent{Type: "html", Value: escapeContent(rel.Content)},
+				Content: atomContent{Type: "html", Value: body},
 			})
 		}
 		af := atomFeed{
