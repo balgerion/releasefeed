@@ -1,10 +1,11 @@
-name: build
 on:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: docker
+    container:
+      image: docker:latest
     steps:
       - name: checkout
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
