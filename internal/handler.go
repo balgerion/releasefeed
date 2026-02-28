@@ -79,7 +79,7 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 		for _, rel := range releases {
 			body := ""
 			if rel.Image != "" {
-				body = `<img src="` + imageBaseURL + `/static/` + rel.Image + `" style="max-height:48px;margin-bottom:8px;"/><br/>`
+				body = `<img src="` + imageBaseURL + `/image/` + rel.Image + `" style="max-height:48px;margin-bottom:8px;"/><br/>`
 			}
 			body += escapeContent(rel.Content)
 			entries = append(entries, atomEntry{
