@@ -6,7 +6,8 @@ jobs:
     runs-on: docker
 
     container:
-      image: docker:24-cli
+      image: docker:24
+
     services:
       docker:
         image: docker:24-dind
@@ -16,20 +17,45 @@ jobs:
 
     env:
       DOCKER_HOST: tcp://localhost:2375
+      DOCKER_BUILDKIT: 1
 
     steps:
+      - name: Wait for Docker CLI to be present
+        run: |
+          # docker:24 powinien mieć CLI; sanity check
+          docker --version || (echo "docker cli missing"; exit 1)
+
+      - name: Wait for Docker daemon (DinD) to be ready
+        run: |
+          echo "waiting for docker daemon on localhost:2375..."
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 1 http://localhost:2375/_ping >/dev/null 2>&1; then
+              echo "docker daemon is up"
+              break
+            fi
+            sleep 1
+            if [ "$i" -eq 60 ]; then
+              echo "timeout waiting for docker daemon" >&2
+              exit 1
+            fi
+          done
+
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git bash curl
+          apt-get install -y git
 
       - name: Clone repository
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
 
-      - name: Build and push Docker image
+      - name: Setup buildx builder
         run: |
-          docker info
-          docker buildx create --use || true
+          docker buildx create --use --name ci-builder || true
+          docker buildx inspect --bootstrap
+
+      - name: Build & push
+        run: |
           docker buildx build \
+            --platform linux/amd64 \
             -t git.balgeriada.com/balgerion/releasefeed:latest \
             --push .
