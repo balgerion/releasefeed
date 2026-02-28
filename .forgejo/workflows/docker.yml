@@ -5,19 +5,18 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: docker:24-cli
+      image: docker:24-cli-alpine 
 
     env:
       DOCKER_HOST: unix:///var/run/docker.sock
       DOCKER_BUILDKIT: 1
 
     steps:
-      - name: Install deps
+      - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y git
+          apk add --no-cache git bash curl
 
-      - name: Clone repo
+      - name: Clone repository
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
 
       - name: Setup buildx
