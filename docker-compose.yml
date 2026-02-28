@@ -1,0 +1,9 @@
+services:
+  releasefeed:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./state.json:/app/state.json
