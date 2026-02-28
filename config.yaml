@@ -1,0 +1,49 @@
+server:
+  port: "8080"
+
+apprise:
+  url: "https://notify.balgeriada.com/cfg/e92e76571d74be82dd94439258115f051b0f0d4c619835b3bd385149174dc281"
+  tags:
+    - releases
+
+defaults:
+  fetch_interval: "1h"
+  alert_keywords:
+    - "breaking"
+    - "breaking change"
+    - "security"
+    - "warning"
+    - "deprecated"
+
+feeds:
+  - name: "LoggiFly"
+    url: "https://github.com/clemcer/LoggiFly/releases.atom"
+    fetch_interval: "30m"
+    sections:
+      mode: include
+      names:
+        - "what's new"
+        - "bug fixes"
+        - "breaking changes"
+    alert_keywords:
+      - "breaking"
+      - "security"
+
+  - name: "Hyprland"
+    url: "https://github.com/hyprwm/Hyprland/releases.atom"
+    sections:
+      mode: exclude
+      names:
+        - "special thanks"
+        - "donators"
+        - "contributors"
+        - "one-time donators"
+        - "sponsors"
+        - "supporters"
+    regex_remove:
+      - "(?i)made with.*"
+      - "(?i)buy me a coffee.*"
+
+  - name: "Vaultwarden"
+    url: "https://github.com/dani-garcia/vaultwarden/releases.atom"
+    raw: true
