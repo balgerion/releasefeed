@@ -1,8 +1,9 @@
 server:
   port: "8080"
+  base_url: "http://192.168.1.119:8080"
 
 apprise:
-  url: "https://notify.balgeriada.com/cfg/e92e76571d74be82dd94439258115f051b0f0d4c619835b3bd385149174dc281"
+  url: "http://apprise:8000"
   tags:
     - releases
 
@@ -19,6 +20,7 @@ feeds:
   - name: "LoggiFly"
     url: "https://github.com/clemcer/LoggiFly/releases.atom"
     fetch_interval: "30m"
+    image: "loggify.webp"
     sections:
       mode: include
       names:
@@ -31,6 +33,7 @@ feeds:
 
   - name: "Hyprland"
     url: "https://github.com/hyprwm/Hyprland/releases.atom"
+    image: "hyprland.webp"
     sections:
       mode: exclude
       names:
@@ -40,10 +43,8 @@ feeds:
         - "one-time donators"
         - "sponsors"
         - "supporters"
-    regex_remove:
-      - "(?i)made with.*"
-      - "(?i)buy me a coffee.*"
 
   - name: "Vaultwarden"
     url: "https://github.com/dani-garcia/vaultwarden/releases.atom"
+    image: "vaultwarden.webp"
     raw: true
