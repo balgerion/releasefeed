@@ -1,8 +1,19 @@
 services:
   releasefeed:
-    build: .
+    image: git.balgeriada.com/balgerion/releasefeed:latest
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "880:880"
     volumes:
-      - ./config:/app/config
+      - config:/app/config
+
+volumes:
+  config:
+    driver_opts:
+      type: nfs
+      o: nfsvers=4.2,addr=192.168.1.21       
+      device: ":/mnt/Balgeriada1/docker/app/releasefeed/config"  
