@@ -13,6 +13,7 @@ type Release struct {
 	Content     string
 	URL         string
 	PublishedAt time.Time
+    Image       string
 }
 
 func Fetch(feedName, url string) ([]Release, error) {
