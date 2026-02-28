@@ -14,9 +14,7 @@ jobs:
         run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login git.balgeriada.com -u "${{ secrets.REGISTRY_USER }}" --password-stdin
       - name: build and push
         run: |
-          docker buildx create --use
-          docker buildx build \
-            --platform linux/arm64 \
-            -t git.balgeriada.com/balgerion/releasefeed:latest \
-            --push \
-            .
+          docker build -t git.balgeriada.com/balgerion/releasefeed:latest .
+          docker push git.balgeriada.com/balgerion/releasefeed:latest
+      - name: cleanup
+        run: docker system prune -af
