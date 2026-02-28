@@ -1,23 +1,33 @@
 on:
   workflow_dispatch:
-  
+
 jobs:
   build:
     runs-on: docker
+
     container:
-      image: alpine:3.23.3
+      image: docker:24-cli
     services:
       docker:
         image: docker:24-dind
         options: --privileged
         env:
           DOCKER_TLS_CERTDIR: ""
+
     env:
       DOCKER_HOST: tcp://localhost:2375
+
     steps:
-      - run: apk add --no-cache git bash curl
-      - run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
-      - run: |
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git bash curl
+
+      - name: Clone repository
+        run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
+
+      - name: Build and push Docker image
+        run: |
           docker info
           docker buildx create --use || true
           docker buildx build \
