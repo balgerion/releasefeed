@@ -9,9 +9,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: login
+        run: echo "${{ secrets.FORGEJO_TOKEN }}" | docker login git.balgeriada.com -u balgerion --password-stdin
+
       - name: build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: git.balgeriada.com/balgerion/releasefeed:latest
+        run: |
+          docker build -t git.balgeriada.com/balgerion/releasefeed:latest .
+          docker push git.balgeriada.com/balgerion/releasefeed:latest
