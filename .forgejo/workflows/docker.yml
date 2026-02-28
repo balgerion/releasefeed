@@ -16,18 +16,13 @@ jobs:
           DOCKER_TLS_CERTDIR: ""
 
     env:
-      DOCKER_HOST: tcp://docker:2375
+      DOCKER_HOST: tcp://localhost:2375
 
     steps:
-      - name: install git
-        run: apk add --no-cache git
-
-      - name: checkout
-        run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
-
-      - name: build and push
-        run: |
-          docker buildx create --use --name builder || true
+      - run: apk add --no-cache git
+      - run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
+      - run: |
+          docker buildx create --use || true
           docker buildx build \
             -t git.balgeriada.com/balgerion/releasefeed:latest \
             --push .
