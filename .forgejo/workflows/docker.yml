@@ -5,28 +5,21 @@ jobs:
   build:
     runs-on: docker
     container:
-      image: docker:24-cli-alpine 
-
+      image: docker:29.2.1-cli-alpine3.23
     env:
       DOCKER_HOST: unix:///var/run/docker.sock
       DOCKER_BUILDKIT: 1
-
     steps:
-      - name: Install dependencies
-        run: |
-          apk add --no-cache git bash curl
-
-      - name: Clone repository
+      - name: Install deps
+        run: apk add --no-cache git bash curl
+      - name: Clone repo
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
-
       - name: Setup buildx
         run: |
           docker buildx create --use --name ci-builder || true
           docker buildx inspect --bootstrap
-
       - name: Build & push
         run: |
-          docker buildx build \
-            --platform linux/amd64 \
+          docker buildx build --platform linux/amd64 \
             -t git.balgeriada.com/balgerion/releasefeed:latest \
             --push .
