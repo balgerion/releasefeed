@@ -8,48 +8,41 @@ jobs:
     container:
       image: docker:24
 
-    services:
-      docker:
-        image: docker:24-dind
-        options: --privileged
-        env:
-          DOCKER_TLS_CERTDIR: ""
-
     env:
-      DOCKER_HOST: tcp://localhost:2375
+      DOCKER_DAEMON_HOST: 10.0.35.2
+      DOCKER_HOST: tcp://10.0.35.2:2375
       DOCKER_BUILDKIT: 1
 
     steps:
-      - name: Wait for Docker CLI to be present
+      - name: Sanity - check network reachability to DinD
         run: |
-          # docker:24 powinien mieć CLI; sanity check
-          docker --version || (echo "docker cli missing"; exit 1)
-
-      - name: Wait for Docker daemon (DinD) to be ready
-        run: |
-          echo "waiting for docker daemon on localhost:2375..."
-          for i in $(seq 1 60); do
-            if curl -fsS --max-time 1 http://localhost:2375/_ping >/dev/null 2>&1; then
-              echo "docker daemon is up"
+          echo "testing tcp connection to $DOCKER_DAEMON_HOST:2375"
+          for i in $(seq 1 20); do
+            if curl -fsS --max-time 2 "http://$DOCKER_DAEMON_HOST:2375/_ping" >/dev/null 2>&1; then
+              echo "docker daemon reachable"
               break
             fi
+            echo "wait... ($i)"
             sleep 1
-            if [ "$i" -eq 60 ]; then
-              echo "timeout waiting for docker daemon" >&2
+            if [ "$i" -eq 20 ]; then
+              echo "ERROR: cannot reach docker daemon at $DOCKER_DAEMON_HOST:2375" >&2
+              curl -v "http://$DOCKER_DAEMON_HOST:2375" || true
               exit 1
             fi
           done
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           apt-get update
           apt-get install -y git
 
-      - name: Clone repository
+      - name: Clone repo
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
 
-      - name: Setup buildx builder
+      - name: Setup buildx
         run: |
+          docker --version
+          docker info || true
           docker buildx create --use --name ci-builder || true
           docker buildx inspect --bootstrap
 
