@@ -4,15 +4,30 @@ on:
 jobs:
   build:
     runs-on: docker
+
     container:
-      image: docker:latest
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
+      image: docker:24-cli
+
+    services:
+      docker:
+        image: docker:24-dind
+        options: --privileged
+        env:
+          DOCKER_TLS_CERTDIR: ""
+
+    env:
+      DOCKER_HOST: tcp://docker:2375
+
     steps:
+      - name: install git
+        run: apk add --no-cache git
+
       - name: checkout
         run: git clone https://git.balgeriada.com/balgerion/releasefeed.git .
 
       - name: build and push
         run: |
-          docker build -t git.balgeriada.com/balgerion/releasefeed:latest .
-          docker push git.balgeriada.com/balgerion/releasefeed:latest
+          docker buildx create --use --name builder || true
+          docker buildx build \
+            -t git.balgeriada.com/balgerion/releasefeed:latest \
+            --push .
