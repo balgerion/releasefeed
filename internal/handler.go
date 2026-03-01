@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -36,59 +39,38 @@ func (c *Cache) All() []Release {
 	return all
 }
 
-type atomFeed struct {
-	XMLName xml.Name    `xml:"feed"`
-	XMLNS   string      `xml:"xmlns,attr"`
-	Title   string      `xml:"title"`
-	Updated string      `xml:"updated"`
-	Entries []atomEntry `xml:"entry"`
-}
-
-type atomEntry struct {
-	Title   string      `xml:"title"`
-	Link    atomLink    `xml:"link"`
-	ID      string      `xml:"id"`
-	Updated string      `xml:"updated"`
-	Content atomContent `xml:"content"`
-}
-
-type atomLink struct {
-	Href string `xml:"href,attr"`
-}
-
-type atomContent struct {
-	Type  string `xml:"type,attr"`
-	Value string `xml:",chardata"`
+func xmlEscape(s string) string {
+	var b bytes.Buffer
+	xml.EscapeText(&b, []byte(s))
+	return b.String()
 }
 
 func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		releases := cache.All()
-		entries := make([]atomEntry, 0, len(releases))
+		var sb strings.Builder
+		sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+		sb.WriteString(`<feed xmlns="http://www.w3.org/2005/Atom">`)
+		sb.WriteString(`<title>Release Feed</title>`)
+		sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, time.Now().Format(time.RFC3339)))
 		for _, rel := range releases {
-			body := ""
+			body := rel.Content
 			if rel.Image != "" {
 				src := imageBaseURL + "/image/" + rel.Image
-				body = `<img src="` + src + `" style="width="48" height="48" style="margin-bottom:8px;"/><br/>` + rel.Content
-			} else {
-				body = rel.Content
+				body = fmt.Sprintf(`<img src="%s" width="48" height="48" style="margin-bottom:8px;"/><br/>`, src) + body
 			}
-			entries = append(entries, atomEntry{
-				Title:   "[" + rel.FeedName + "] " + rel.Title,
-				Link:    atomLink{Href: rel.URL},
-				ID:      rel.ID,
-				Updated: rel.PublishedAt.Format(time.RFC3339),
-				Content: atomContent{Type: "html", Value: body},
-			})
+			sb.WriteString(`<entry>`)
+			sb.WriteString(fmt.Sprintf(`<title>%s</title>`, xmlEscape("["+rel.FeedName+"] "+rel.Title)))
+			sb.WriteString(fmt.Sprintf(`<link href="%s"/>`, xmlEscape(rel.URL)))
+			sb.WriteString(fmt.Sprintf(`<id>%s</id>`, xmlEscape(rel.ID)))
+			sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, rel.PublishedAt.Format(time.RFC3339)))
+			sb.WriteString(`<content type="html"><![CDATA[`)
+			sb.WriteString(body)
+			sb.WriteString(`]]></content>`)
+			sb.WriteString(`</entry>`)
 		}
-		af := atomFeed{
-			XMLNS:   "http://www.w3.org/2005/Atom",
-			Title:   "Release Feed",
-			Updated: time.Now().Format(time.RFC3339),
-			Entries: entries,
-		}
+		sb.WriteString(`</feed>`)
 		w.Header().Set("Content-Type", "application/atom+xml; charset=utf-8")
-		w.Write([]byte(xml.Header))
-		xml.NewEncoder(w).Encode(af)
+		w.Write([]byte(sb.String()))
 	}
 }
