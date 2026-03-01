@@ -1,9 +1,9 @@
 server:
-  port: "8080"
-  base_url: "http://192.168.1.119:8080"
+  port: "880"
+  base_url: "https://feed.balgeriada.com"
 
 apprise:
-  url: "http://apprise:8000"
+  url: "https://notify.balgeriada.com/cfg/e92e76571d74be82dd94439258115f051b0f0d4c619835b3bd385149174dc281"
   tags:
     - releases
 
@@ -15,36 +15,24 @@ defaults:
     - "security"
     - "warning"
     - "deprecated"
+  exclude_sections:
+    - "special thanks"
+    - "sponsors"
+    - "donators"
+    - "contributors"
+    - "one-time donators"
+    - "supporters"
 
 feeds:
   - name: "LoggiFly"
     url: "https://github.com/clemcer/LoggiFly/releases.atom"
     fetch_interval: "30m"
     image: "loggify.webp"
-    sections:
-      mode: include
-      names:
-        - "what's new"
-        - "bug fixes"
-        - "breaking changes"
-    alert_keywords:
-      - "breaking"
-      - "security"
 
   - name: "Hyprland"
     url: "https://github.com/hyprwm/Hyprland/releases.atom"
-    image: "hyprland.webp"
-    sections:
-      mode: exclude
-      names:
-        - "special thanks"
-        - "donators"
-        - "contributors"
-        - "one-time donators"
-        - "sponsors"
-        - "supporters"
+    image: "hyprland.svg"
 
   - name: "Vaultwarden"
     url: "https://github.com/dani-garcia/vaultwarden/releases.atom"
     image: "vaultwarden.webp"
-    raw: true
