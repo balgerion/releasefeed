@@ -27,10 +27,14 @@ type apprisePayload struct {
 	Tag   []string `json:"tag,omitempty"`
 }
 
-func (a *appriseClient) Notify(r Release, tags []string) error {
+func (a *appriseClient) Notify(r Release, tags []string, matched []string) error {
+	body := r.URL
+	if len(matched) > 0 {
+		body += "\nkeywords: " + strings.Join(matched, ", ")
+	}
 	p := apprisePayload{
 		Title: fmt.Sprintf("[%s] %s", r.FeedName, r.Title),
-		Body:  r.URL,
+		Body:  body,
 		Tag:   tags,
 	}
 	data, err := json.Marshal(p)
@@ -48,12 +52,13 @@ func (a *appriseClient) Notify(r Release, tags []string) error {
 	return nil
 }
 
-func HasKeyword(content string, keywords []string) bool {
+func MatchedKeywords(content string, keywords []string) []string {
 	lower := strings.ToLower(content)
+	var matched []string
 	for _, kw := range keywords {
 		if strings.Contains(lower, strings.ToLower(kw)) {
-			return true
+			matched = append(matched, kw)
 		}
 	}
-	return false
+	return matched
 }
