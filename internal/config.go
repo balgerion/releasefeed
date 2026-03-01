@@ -27,7 +27,6 @@ type Feed struct {
 	FetchInterval string   `yaml:"fetch_interval"`
 	Sections      Sections `yaml:"sections"`
 	RegexRemove   []string `yaml:"regex_remove"`
-	Raw           bool     `yaml:"raw"`
 	Image         string   `yaml:"image"`
 	AlertKeywords []string `yaml:"alert_keywords"`
 	AppriseTags   []string `yaml:"apprise_tags"`
