@@ -7,40 +7,19 @@ import (
 )
 
 var (
-	htmlTagRe = regexp.MustCompile(`<[^>]+>`)
 	multiNLRe = regexp.MustCompile(`\n{3,}`)
-	mdLinkRe  = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
-	mdBoldRe  = regexp.MustCompile(`\*{1,3}([^*]+)\*{1,3}`)
-	mdCodeRe  = regexp.MustCompile("`([^`]+)`")
-	h1Re      = regexp.MustCompile(`(?i)<h1[^>]*>`)
-	h2Re      = regexp.MustCompile(`(?i)<h2[^>]*>`)
-	h3Re      = regexp.MustCompile(`(?i)<h3[^>]*>`)
-	hCloseRe  = regexp.MustCompile(`(?i)</h[1-6]>`)
-	brRe      = regexp.MustCompile(`(?i)<br\s*/?>`)
+	hTagRe    = regexp.MustCompile(`(?i)<(h[1-6])[^>]*>(.*?)</h[1-6]>`)
 )
 
 func Normalize(r Release, cfg Feed) Release {
-	if cfg.Raw {
-		return r
-	}
-
 	content := html.UnescapeString(r.Content)
-
-	content = h1Re.ReplaceAllString(content, "\n# ")
-	content = h2Re.ReplaceAllString(content, "\n## ")
-	content = h3Re.ReplaceAllString(content, "\n### ")
-	content = hCloseRe.ReplaceAllString(content, "\n")
-	content = brRe.ReplaceAllString(content, "\n")
-	content = htmlTagRe.ReplaceAllString(content, "")
 
 	if len(cfg.Sections.Names) > 0 {
 		switch cfg.Sections.Mode {
+		case "include":
+			content = filterSectionsHTML(content, cfg.Sections.Names, true)
 		case "exclude":
-			content = excludeSections(content, cfg.Sections.Names)
-		default:
-			if extracted := includeSections(content, cfg.Sections.Names); extracted != "" {
-				content = extracted
-			}
+			content = filterSectionsHTML(content, cfg.Sections.Names, false)
 		}
 	}
 
@@ -51,68 +30,58 @@ func Normalize(r Release, cfg Feed) Release {
 		}
 	}
 
-	content = mdLinkRe.ReplaceAllString(content, "$1")
-	content = mdBoldRe.ReplaceAllString(content, "$1")
-	content = mdCodeRe.ReplaceAllString(content, "$1")
-	content = multiNLRe.ReplaceAllString(content, "\n\n")
-	content = strings.TrimSpace(content)
-
+	content = strings.TrimSpace(multiNLRe.ReplaceAllString(content, "\n\n"))
 	r.Content = content
 	return r
 }
 
-func includeSections(content string, names []string) string {
-	lines := strings.Split(content, "\n")
-	var result []string
-	var current []string
-	inSection := false
+func filterSectionsHTML(content string, names []string, include bool) string {
+	parts := hTagRe.Split(content, -1)
+	matches := hTagRe.FindAllStringSubmatchIndex(content, -1)
 
-	flush := func() {
-		if len(current) > 0 {
-			result = append(result, strings.Join(current, "\n"))
-			current = nil
+	if len(matches) == 0 {
+		return content
+	}
+
+	type section struct {
+		tag     string
+		heading string
+		body    string
+	}
+
+	sections := []section{}
+	preamble := ""
+
+	if len(matches) > 0 && matches[0][0] > 0 {
+		preamble = content[:matches[0][0]]
+	}
+
+	for i, m := range matches {
+		tag := content[m[2]:m[3]]
+		heading := content[m[4]:m[5]]
+		body := ""
+		if i+1 < len(parts) {
+			body = parts[i+1]
+		}
+		sections = append(sections, section{tag, heading, body})
+	}
+
+	var result strings.Builder
+	result.WriteString(preamble)
+
+	for _, s := range sections {
+		matched := matchesAny(s.heading, names)
+		if (include && matched) || (!include && !matched) {
+			result.WriteString("<" + s.tag + ">" + s.heading + "</" + s.tag + ">")
+			result.WriteString(s.body)
 		}
 	}
 
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") {
-			if inSection {
-				flush()
-			}
-			inSection = matchesAny(trimmed, names)
-			if inSection {
-				current = append(current, line)
-			}
-		} else if inSection {
-			current = append(current, line)
-		}
-	}
-	flush()
-
-	return strings.Join(result, "\n\n")
+	return result.String()
 }
 
-func excludeSections(content string, names []string) string {
-	lines := strings.Split(content, "\n")
-	var result []string
-	skip := false
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "#") {
-			skip = matchesAny(trimmed, names)
-		}
-		if !skip {
-			result = append(result, line)
-		}
-	}
-
-	return strings.Join(result, "\n")
-}
-
-func matchesAny(line string, names []string) bool {
-	lower := strings.ToLower(line)
+func matchesAny(text string, names []string) bool {
+	lower := strings.ToLower(text)
 	for _, name := range names {
 		if strings.Contains(lower, strings.ToLower(name)) {
 			return true
