@@ -56,7 +56,10 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 		for _, rel := range releases {
 			body := rel.Content
 			if rel.Image != "" {
-				src := imageBaseURL + "/image/" + rel.Image
+				src := rel.Image
+				if !strings.HasPrefix(src, "http") {
+					src = imageBaseURL + "/image/" + src
+				}
 				body = fmt.Sprintf(`<img src="%s" width="48" height="48" style="margin-bottom:8px;"/><br/>`, src) + body
 			}
 			sb.WriteString(`<entry>`)
