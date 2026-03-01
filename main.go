@@ -33,11 +33,13 @@ func main() {
 		}
 
 		poll := func() {
+			log.Printf("[%s] fetching", f.Name)
 			releases, err := internal.Fetch(f.Name, f.URL)
 			if err != nil {
-				log.Printf("fetch error %s: %v", f.Name, err)
+				log.Printf("[%s] fetch error: %v", f.Name, err)
 				return
 			}
+			log.Printf("[%s] got %d releases", f.Name, len(releases))
 			normalized := make([]internal.Release, 0, len(releases))
 			for _, r := range releases {
 				r = internal.Normalize(r, f)
@@ -45,8 +47,9 @@ func main() {
 				normalized = append(normalized, r)
 				if !st.Seen(r.ID) {
 					if internal.HasKeyword(r.Title+" "+r.Content, f.AlertKeywords) {
+						log.Printf("[%s] alert: %s", f.Name, r.Title)
 						if err := app.Notify(r, f.AppriseTags); err != nil {
-							log.Printf("apprise error %s: %v", f.Name, err)
+							log.Printf("[%s] apprise error: %v", f.Name, err)
 						}
 					}
 					if err := st.Mark(r.ID); err != nil {
@@ -68,8 +71,12 @@ func main() {
 		}()
 	}
 
-	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
+	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/images"))))
 	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
 
 	go func() {
 		log.Printf("listening on :%s", cfg.Server.Port)
