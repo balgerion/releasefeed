@@ -15,6 +15,7 @@ type Defaults struct {
 	FetchInterval   string   `yaml:"fetch_interval"`
 	AlertKeywords   []string `yaml:"alert_keywords"`
 	ExcludeSections []string `yaml:"exclude_sections"`
+	Image           string   `yaml:"image"`
 }
 
 type Feed struct {
@@ -70,6 +71,9 @@ func LoadConfig(path string) (*Config, error) {
 	for i := range cfg.Feeds {
 		if cfg.Feeds[i].FetchInterval == "" {
 			cfg.Feeds[i].FetchInterval = cfg.Defaults.FetchInterval
+		}
+		if cfg.Feeds[i].Image == "" {
+			cfg.Feeds[i].Image = cfg.Defaults.Image
 		}
 		cfg.Feeds[i].AlertKeywords = merge(cfg.Defaults.AlertKeywords, cfg.Feeds[i].AlertKeywords)
 		cfg.Feeds[i].ExcludeSections = merge(cfg.Defaults.ExcludeSections, cfg.Feeds[i].ExcludeSections)
