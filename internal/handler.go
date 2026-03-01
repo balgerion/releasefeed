@@ -69,7 +69,7 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 			body := ""
 			if rel.Image != "" {
 				src := imageBaseURL + "/image/" + rel.Image
-				body = `<img src="` + src + `" style="max-height:48px;margin-bottom:8px;"/><br/>` + rel.Content
+				body = `<img src="` + src + `" style="max-height:64px;max-width:200px;width:auto;height:auto;margin-bottom:8px;"/><br/>` + rel.Content
 			} else {
 				body = rel.Content
 			}
