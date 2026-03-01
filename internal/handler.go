@@ -1,11 +1,9 @@
 package internal
 
 import (
-	"bytes"
 	"encoding/xml"
 	"net/http"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 )
@@ -60,16 +58,7 @@ type atomLink struct {
 
 type atomContent struct {
 	Type  string `xml:"type,attr"`
-	Value string `xml:",innerxml"`
-}
-
-func escapeContent(s string) string {
-	var buf bytes.Buffer
-	for _, line := range strings.Split(s, "\n") {
-		xml.EscapeText(&buf, []byte(line))
-		buf.WriteString("<br/>")
-	}
-	return buf.String()
+	Value string `xml:",chardata"`
 }
 
 func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
@@ -79,9 +68,11 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 		for _, rel := range releases {
 			body := ""
 			if rel.Image != "" {
-				body = `<img src="` + imageBaseURL + `/image/` + rel.Image + `" style="max-height:48px;margin-bottom:8px;"/><br/>`
+				src := imageBaseURL + "/image/" + rel.Image
+				body = `<img src="` + src + `" style="max-height:48px;margin-bottom:8px;"/><br/>` + rel.Content
+			} else {
+				body = rel.Content
 			}
-			body += escapeContent(rel.Content)
 			entries = append(entries, atomEntry{
 				Title:   "[" + rel.FeedName + "] " + rel.Title,
 				Link:    atomLink{Href: rel.URL},
