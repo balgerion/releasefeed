@@ -71,7 +71,7 @@ func main() {
 		}()
 	}
 
-	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/images"))))
+	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
 	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
