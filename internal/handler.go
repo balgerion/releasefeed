@@ -50,13 +50,14 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 		releases := cache.All()
 		var sb strings.Builder
 		sb.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
-		sb.WriteString(`<feed xmlns="http://www.w3.org/2005/Atom">`)
+		sb.WriteString(`<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">`)
 		sb.WriteString(`<title>Release Feed</title>`)
 		sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, time.Now().Format(time.RFC3339)))
 		for _, rel := range releases {
 			body := rel.Content
+			src := ""
 			if rel.Image != "" {
-				src := rel.Image
+				src = rel.Image
 				if !strings.HasPrefix(src, "http") {
 					src = imageBaseURL + "/image/" + src
 				}
@@ -67,6 +68,9 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 			sb.WriteString(fmt.Sprintf(`<link href="%s"/>`, xmlEscape(rel.URL)))
 			sb.WriteString(fmt.Sprintf(`<id>%s</id>`, xmlEscape(rel.ID)))
 			sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, rel.PublishedAt.Format(time.RFC3339)))
+			if src != "" {
+				sb.WriteString(fmt.Sprintf(`<media:thumbnail url="%s"/>`, xmlEscape(src)))
+			}
 			sb.WriteString(`<content type="html"><![CDATA[`)
 			sb.WriteString(body)
 			sb.WriteString(`]]></content>`)
