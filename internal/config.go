@@ -12,24 +12,20 @@ type Apprise struct {
 }
 
 type Defaults struct {
-	FetchInterval string   `yaml:"fetch_interval"`
-	AlertKeywords []string `yaml:"alert_keywords"`
-}
-
-type Sections struct {
-	Mode  string   `yaml:"mode"`
-	Names []string `yaml:"names"`
+	FetchInterval   string   `yaml:"fetch_interval"`
+	AlertKeywords   []string `yaml:"alert_keywords"`
+	ExcludeSections []string `yaml:"exclude_sections"`
 }
 
 type Feed struct {
-	Name          string   `yaml:"name"`
-	URL           string   `yaml:"url"`
-	FetchInterval string   `yaml:"fetch_interval"`
-	Sections      Sections `yaml:"sections"`
-	RegexRemove   []string `yaml:"regex_remove"`
-	Image         string   `yaml:"image"`
-	AlertKeywords []string `yaml:"alert_keywords"`
-	AppriseTags   []string `yaml:"apprise_tags"`
+	Name            string   `yaml:"name"`
+	URL             string   `yaml:"url"`
+	FetchInterval   string   `yaml:"fetch_interval"`
+	ExcludeSections []string `yaml:"exclude_sections"`
+	RegexRemove     []string `yaml:"regex_remove"`
+	Image           string   `yaml:"image"`
+	AlertKeywords   []string `yaml:"alert_keywords"`
+	AppriseTags     []string `yaml:"apprise_tags"`
 }
 
 type Server struct {
@@ -42,6 +38,18 @@ type Config struct {
 	Apprise  Apprise  `yaml:"apprise"`
 	Defaults Defaults `yaml:"defaults"`
 	Feeds    []Feed   `yaml:"feeds"`
+}
+
+func merge(a, b []string) []string {
+	seen := map[string]bool{}
+	var result []string
+	for _, s := range append(a, b...) {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+	return result
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -63,9 +71,8 @@ func LoadConfig(path string) (*Config, error) {
 		if cfg.Feeds[i].FetchInterval == "" {
 			cfg.Feeds[i].FetchInterval = cfg.Defaults.FetchInterval
 		}
-		if len(cfg.Feeds[i].AlertKeywords) == 0 {
-			cfg.Feeds[i].AlertKeywords = cfg.Defaults.AlertKeywords
-		}
+		cfg.Feeds[i].AlertKeywords = merge(cfg.Defaults.AlertKeywords, cfg.Feeds[i].AlertKeywords)
+		cfg.Feeds[i].ExcludeSections = merge(cfg.Defaults.ExcludeSections, cfg.Feeds[i].ExcludeSections)
 		if len(cfg.Feeds[i].AppriseTags) == 0 {
 			cfg.Feeds[i].AppriseTags = cfg.Apprise.Tags
 		}
