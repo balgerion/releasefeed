@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"net/http"
 	"os"
 	"os/signal"
@@ -46,9 +47,9 @@ func main() {
 				r.Image = f.Image
 				normalized = append(normalized, r)
 				if !st.Seen(r.ID) {
-					if internal.HasKeyword(r.Title+" "+r.Content, f.AlertKeywords) {
-						log.Printf("[%s] alert: %s", f.Name, r.Title)
-						if err := app.Notify(r, f.AppriseTags); err != nil {
+					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); len(matched) > 0 {
+						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
+						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
 						}
 					}
