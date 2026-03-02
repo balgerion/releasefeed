@@ -91,8 +91,7 @@ Tekst przed pierwszą sekcją (preambuła) jest zawsze zachowany.
 ## Powiadomienia Apprise
 
 Powiadomienie wysyłane gdy:
-- release jest nowy (nie widziany w `state.json`)
-- tytuł lub treść zawiera słowo kluczowe z `alert_keywords`
+- release jest nowy (nie widziany w `state.json`) i tytuł lub treść zawiera słowo kluczowe z `alert_keywords`
 
 Treść powiadomienia: tytuł `[NazwaFeeda] wersja` + link do release'a.
 
