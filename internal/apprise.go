@@ -41,7 +41,7 @@ func (a *appriseClient) Notify(r Release, tags []string, matched []string) error
 	if err != nil {
 		return err
 	}
-	resp, err := a.client.Post(a.baseURL+"/notify", "application/json", bytes.NewReader(data))
+	resp, err := a.client.Post(a.baseURL, "application/json", bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
