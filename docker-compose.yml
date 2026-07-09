@@ -6,6 +6,10 @@ services:
         constraints:
           - node.role == worker
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:880/"]
+      interval: 1m
+      timeout: 5s
     ports:
       - "880:880"
     volumes:
