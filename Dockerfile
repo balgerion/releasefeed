@@ -9,5 +9,5 @@ FROM alpine:3.23
 WORKDIR /app
 RUN apk add --no-cache tzdata
 COPY --from=builder /app/releasefeed .
-EXPOSE 8080
+EXPOSE 880
 CMD ["./releasefeed"]
