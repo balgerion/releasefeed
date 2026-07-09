@@ -36,3 +36,7 @@ feeds:
   - name: "Vaultwarden"
     url: "https://github.com/dani-garcia/vaultwarden/releases.atom"
     image: "vaultwarden.webp"
+    notify_all: true
+    ignore_titles:
+      - "beta"
+      - "-rc"
