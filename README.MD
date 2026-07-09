@@ -46,6 +46,7 @@ releasefeed/
 | Field | Description |
 |---|---|
 | `fetch_interval` | How often to poll feeds (e.g. `30m`, `1h`, `6h`) |
+| `max_entries` | Newest releases per feed kept in `/feed` (default `10`) |
 | `alert_keywords` | Keywords that trigger a notification |
 | `exclude_sections` | Sections stripped from every feed |
 | `ignore_titles` | Case-insensitive regexes — matching releases are skipped entirely (e.g. `beta`, `-rc`) |
@@ -57,6 +58,7 @@ releasefeed/
 | `name` | yes | Display name used in the feed |
 | `url` | yes | GitHub Atom feed URL (`/releases.atom`) |
 | `fetch_interval` | no | Overrides `defaults.fetch_interval` |
+| `max_entries` | no | Overrides `defaults.max_entries` |
 | `image` | no | File name from `config/image/` |
 | `exclude_sections` | no | Extra sections to strip — merged with `defaults.exclude_sections` |
 | `regex_remove` | no | Regular expressions — matching HTML fragments are removed |
