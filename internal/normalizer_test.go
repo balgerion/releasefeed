@@ -25,12 +25,30 @@ func TestExcludeSections(t *testing.T) {
 	}
 }
 
-func TestCachePinsFirstSeenTime(t *testing.T) {
-	c := NewCache()
+func TestStatePersistsFirstSeenTime(t *testing.T) {
+	path := t.TempDir() + "/state.json"
 	first := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	c.Set("f", []Release{{ID: "a", PublishedAt: first}})
-	c.Set("f", []Release{{ID: "a", PublishedAt: first.Add(48 * time.Hour)}})
-	if got := c.All()[0].PublishedAt; !got.Equal(first) {
-		t.Errorf("timestamp not pinned: %v", got)
+
+	st, err := NewState(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !st.Empty() {
+		t.Error("new state should be empty")
+	}
+	if err := st.Mark("a", first); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Mark("a", first.Add(48*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+
+	st2, err := NewState(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := st2.FirstSeen("a")
+	if !ok || !got.Equal(first) {
+		t.Errorf("first-seen time not persisted: %v %v", got, ok)
 	}
 }

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -18,6 +19,7 @@ type Release struct {
 
 func Fetch(feedName, url string) ([]Release, error) {
 	fp := gofeed.NewParser()
+	fp.Client = &http.Client{Timeout: 30 * time.Second}
 	f, err := fp.ParseURL(url)
 	if err != nil {
 		return nil, err

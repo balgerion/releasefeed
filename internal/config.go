@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"fmt"
 	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,14 +21,15 @@ type Defaults struct {
 }
 
 type Feed struct {
-	Name            string   `yaml:"name"`
-	URL             string   `yaml:"url"`
-	FetchInterval   string   `yaml:"fetch_interval"`
-	ExcludeSections []string `yaml:"exclude_sections"`
-	RegexRemove     []string `yaml:"regex_remove"`
-	Image           string   `yaml:"image"`
-	AlertKeywords   []string `yaml:"alert_keywords"`
-	AppriseTags     []string `yaml:"apprise_tags"`
+	Name            string           `yaml:"name"`
+	URL             string           `yaml:"url"`
+	FetchInterval   string           `yaml:"fetch_interval"`
+	ExcludeSections []string         `yaml:"exclude_sections"`
+	RegexRemove     []string         `yaml:"regex_remove"`
+	Image           string           `yaml:"image"`
+	AlertKeywords   []string         `yaml:"alert_keywords"`
+	AppriseTags     []string         `yaml:"apprise_tags"`
+	regexRemove     []*regexp.Regexp `yaml:"-"`
 }
 
 type Server struct {
@@ -79,6 +82,13 @@ func LoadConfig(path string) (*Config, error) {
 		cfg.Feeds[i].ExcludeSections = merge(cfg.Defaults.ExcludeSections, cfg.Feeds[i].ExcludeSections)
 		if len(cfg.Feeds[i].AppriseTags) == 0 {
 			cfg.Feeds[i].AppriseTags = cfg.Apprise.Tags
+		}
+		for _, pattern := range cfg.Feeds[i].RegexRemove {
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return nil, fmt.Errorf("feed %s: invalid regex_remove %q: %w", cfg.Feeds[i].Name, pattern, err)
+			}
+			cfg.Feeds[i].regexRemove = append(cfg.Feeds[i].regexRemove, re)
 		}
 	}
 	return &cfg, nil

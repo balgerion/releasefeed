@@ -17,10 +17,8 @@ func Normalize(r Release, cfg Feed) Release {
 		content = excludeSectionsHTML(content, cfg.ExcludeSections)
 	}
 
-	for _, pattern := range cfg.RegexRemove {
-		if re, err := regexp.Compile(pattern); err == nil {
-			content = re.ReplaceAllString(content, "")
-		}
+	for _, re := range cfg.regexRemove {
+		content = re.ReplaceAllString(content, "")
 	}
 
 	r.Content = strings.TrimSpace(multiNLRe.ReplaceAllString(content, "\n\n"))

@@ -28,7 +28,6 @@ func main() {
 	freshState := st.Empty()
 
 	for _, f := range cfg.Feeds {
-		f := f
 		interval, err := time.ParseDuration(f.FetchInterval)
 		if err != nil {
 			log.Fatalf("invalid interval for feed %s: %v", f.Name, err)
@@ -46,18 +45,20 @@ func main() {
 			for _, r := range releases {
 				r = internal.Normalize(r, f)
 				r.Image = f.Image
-				normalized = append(normalized, r)
-				if !st.Seen(r.ID) {
+				if t, ok := st.FirstSeen(r.ID); ok {
+					r.PublishedAt = t
+				} else {
 					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); len(matched) > 0 && !quiet {
 						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
 						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
 						}
 					}
-					if err := st.Mark(r.ID); err != nil {
+					if err := st.Mark(r.ID, r.PublishedAt); err != nil {
 						log.Printf("state error: %v", err)
 					}
 				}
+				normalized = append(normalized, r)
 			}
 			cache.Set(f.Name, normalized)
 		}

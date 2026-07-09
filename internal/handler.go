@@ -23,15 +23,6 @@ func NewCache() *Cache {
 func (c *Cache) Set(name string, releases []Release) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	old := make(map[string]time.Time, len(c.entries[name]))
-	for _, r := range c.entries[name] {
-		old[r.ID] = r.PublishedAt
-	}
-	for i := range releases {
-		if t, ok := old[releases[i].ID]; ok {
-			releases[i].PublishedAt = t
-		}
-	}
 	c.entries[name] = releases
 }
 
@@ -81,7 +72,7 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 				sb.WriteString(fmt.Sprintf(`<media:thumbnail url="%s"/>`, xmlEscape(src)))
 			}
 			sb.WriteString(`<content type="html"><![CDATA[`)
-			sb.WriteString(body)
+			sb.WriteString(strings.ReplaceAll(body, "]]>", "]]]]><![CDATA[>"))
 			sb.WriteString(`]]></content>`)
 			sb.WriteString(`</entry>`)
 		}
