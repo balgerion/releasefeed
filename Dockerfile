@@ -10,5 +10,4 @@ WORKDIR /app
 RUN apk add --no-cache tzdata
 COPY --from=builder /app/releasefeed .
 EXPOSE 880
-HEALTHCHECK --interval=1m --timeout=5s CMD wget -qO- http://127.0.0.1:880/ || exit 1
 CMD ["./releasefeed"]
