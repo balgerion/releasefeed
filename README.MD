@@ -31,7 +31,7 @@ releasefeed/
 
 | Field | Description |
 |---|---|
-| `port` | HTTP port (default `8080`) |
+| `port` | HTTP port (default `880`) |
 | `base_url` | Public server address — used to build image URLs |
 
 ### apprise
