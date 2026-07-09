@@ -17,6 +17,7 @@ type Defaults struct {
 	FetchInterval   string   `yaml:"fetch_interval"`
 	AlertKeywords   []string `yaml:"alert_keywords"`
 	ExcludeSections []string `yaml:"exclude_sections"`
+	IgnoreTitles    []string `yaml:"ignore_titles"`
 	Image           string   `yaml:"image"`
 }
 
@@ -29,7 +30,19 @@ type Feed struct {
 	Image           string           `yaml:"image"`
 	AlertKeywords   []string         `yaml:"alert_keywords"`
 	AppriseTags     []string         `yaml:"apprise_tags"`
+	NotifyAll       bool             `yaml:"notify_all"`
+	IgnoreTitles    []string         `yaml:"ignore_titles"`
 	regexRemove     []*regexp.Regexp `yaml:"-"`
+	ignoreTitles    []*regexp.Regexp `yaml:"-"`
+}
+
+func (f Feed) IgnoreTitle(title string) bool {
+	for _, re := range f.ignoreTitles {
+		if re.MatchString(title) {
+			return true
+		}
+	}
+	return false
 }
 
 type Server struct {
@@ -89,6 +102,14 @@ func LoadConfig(path string) (*Config, error) {
 				return nil, fmt.Errorf("feed %s: invalid regex_remove %q: %w", cfg.Feeds[i].Name, pattern, err)
 			}
 			cfg.Feeds[i].regexRemove = append(cfg.Feeds[i].regexRemove, re)
+		}
+		cfg.Feeds[i].IgnoreTitles = merge(cfg.Defaults.IgnoreTitles, cfg.Feeds[i].IgnoreTitles)
+		for _, pattern := range cfg.Feeds[i].IgnoreTitles {
+			re, err := regexp.Compile("(?i)" + pattern)
+			if err != nil {
+				return nil, fmt.Errorf("feed %s: invalid ignore_titles %q: %w", cfg.Feeds[i].Name, pattern, err)
+			}
+			cfg.Feeds[i].ignoreTitles = append(cfg.Feeds[i].ignoreTitles, re)
 		}
 	}
 	return &cfg, nil
