@@ -15,6 +15,7 @@ type Apprise struct {
 
 type Defaults struct {
 	FetchInterval   string   `yaml:"fetch_interval"`
+	MaxEntries      int      `yaml:"max_entries"`
 	AlertKeywords   []string `yaml:"alert_keywords"`
 	ExcludeSections []string `yaml:"exclude_sections"`
 	IgnoreTitles    []string `yaml:"ignore_titles"`
@@ -25,6 +26,7 @@ type Feed struct {
 	Name            string           `yaml:"name"`
 	URL             string           `yaml:"url"`
 	FetchInterval   string           `yaml:"fetch_interval"`
+	MaxEntries      int              `yaml:"max_entries"`
 	ExcludeSections []string         `yaml:"exclude_sections"`
 	RegexRemove     []string         `yaml:"regex_remove"`
 	Image           string           `yaml:"image"`
@@ -84,9 +86,15 @@ func LoadConfig(path string) (*Config, error) {
 	if cfg.Defaults.FetchInterval == "" {
 		cfg.Defaults.FetchInterval = "1h"
 	}
+	if cfg.Defaults.MaxEntries == 0 {
+		cfg.Defaults.MaxEntries = 10
+	}
 	for i := range cfg.Feeds {
 		if cfg.Feeds[i].FetchInterval == "" {
 			cfg.Feeds[i].FetchInterval = cfg.Defaults.FetchInterval
+		}
+		if cfg.Feeds[i].MaxEntries == 0 {
+			cfg.Feeds[i].MaxEntries = cfg.Defaults.MaxEntries
 		}
 		if cfg.Feeds[i].Image == "" {
 			cfg.Feeds[i].Image = cfg.Defaults.Image
