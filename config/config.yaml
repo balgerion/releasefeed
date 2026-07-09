@@ -9,6 +9,7 @@ apprise:
 
 defaults:
   fetch_interval: "1h"
+  max_entries: 10
   alert_keywords:
     - "breaking"
     - "breaking change"
