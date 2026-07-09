@@ -7,6 +7,7 @@ GitHub release aggregator. Polls GitHub Atom feeds, filters the content and publ
 | Endpoint | Description |
 |---|---|
 | `GET /feed` | Combined Atom feed with all releases |
+| `GET /status` | JSON status per feed: last successful fetch, entry count, last error, consecutive failures |
 | `GET /image/{file}` | Serves images from `config/image/` |
 | `GET /` | Health check — returns `ok` |
 
@@ -47,6 +48,7 @@ releasefeed/
 | `fetch_interval` | How often to poll feeds (e.g. `30m`, `1h`, `6h`) |
 | `alert_keywords` | Keywords that trigger a notification |
 | `exclude_sections` | Sections stripped from every feed |
+| `ignore_titles` | Case-insensitive regexes — matching releases are skipped entirely (e.g. `beta`, `-rc`) |
 
 ### feeds
 
@@ -59,6 +61,8 @@ releasefeed/
 | `exclude_sections` | no | Extra sections to strip — merged with `defaults.exclude_sections` |
 | `regex_remove` | no | Regular expressions — matching HTML fragments are removed |
 | `alert_keywords` | no | Merged with `defaults.alert_keywords` |
+| `ignore_titles` | no | Merged with `defaults.ignore_titles` |
+| `notify_all` | no | `true` = notify on every new release, not only on keyword match |
 | `apprise_tags` | no | Overrides global `apprise.tags` |
 
 ## Merging defaults
@@ -96,11 +100,13 @@ Editing a release on GitHub bumps its `<updated>` timestamp, which would resurfa
 
 ## Apprise notifications
 
-A notification is sent when a release is new (not present in `state.json`) and its title or content contains one of the `alert_keywords`.
+A notification is sent when a release is new (not present in `state.json`) and its title or content contains one of the `alert_keywords`, or the feed has `notify_all: true`.
 
 Notification content: `[FeedName] version` title plus a link to the release.
 
 On a fresh (empty) `state.json` the first poll only records existing releases without notifying, so a redeploy never floods you with alerts about old releases.
+
+When a feed fails to fetch 5 times in a row, a single Apprise notification is sent so a silently broken feed doesn't go unnoticed. The failure counter resets on the next successful fetch and is visible under `/status`.
 
 ## Running
 
