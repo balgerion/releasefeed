@@ -25,6 +25,7 @@ func main() {
 
 	cache := internal.NewCache()
 	app := internal.NewApprise(cfg.Apprise.URL)
+	freshState := st.Empty()
 
 	for _, f := range cfg.Feeds {
 		f := f
@@ -33,7 +34,7 @@ func main() {
 			log.Fatalf("invalid interval for feed %s: %v", f.Name, err)
 		}
 
-		poll := func() {
+		poll := func(quiet bool) {
 			log.Printf("[%s] fetching", f.Name)
 			releases, err := internal.Fetch(f.Name, f.URL)
 			if err != nil {
@@ -47,7 +48,7 @@ func main() {
 				r.Image = f.Image
 				normalized = append(normalized, r)
 				if !st.Seen(r.ID) {
-					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); len(matched) > 0 {
+					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); len(matched) > 0 && !quiet {
 						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
 						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
@@ -61,13 +62,13 @@ func main() {
 			cache.Set(f.Name, normalized)
 		}
 
-		poll()
+		poll(freshState)
 
 		go func() {
 			t := time.NewTicker(interval)
 			defer t.Stop()
 			for range t.C {
-				poll()
+				poll(false)
 			}
 		}()
 	}
