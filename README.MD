@@ -46,7 +46,7 @@ releasefeed/
 | Field | Description |
 |---|---|
 | `fetch_interval` | How often to poll feeds (e.g. `30m`, `1h`, `6h`) |
-| `max_entries` | Newest releases per feed kept in `/feed` (default `10`) |
+| `max_entries` | Cap on releases shown per feed in `/feed` (default `10`) — each poll replaces the feed's entries with the N newest, older ones drop off |
 | `alert_keywords` | Keywords that trigger a notification |
 | `exclude_sections` | Sections stripped from every feed |
 | `ignore_titles` | Case-insensitive regexes — matching releases are skipped entirely (e.g. `beta`, `-rc`) |
