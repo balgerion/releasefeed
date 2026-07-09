@@ -1,69 +1,69 @@
 # releasefeed
 
-Agregator release'ów z GitHub. Pobiera GitHub Atom feeds, filtruje treść i publikuje jeden zbiorczy Atom feed dla czytników RSS (np. FreshRSS). Opcjonalnie wysyła powiadomienia przez Apprise przy wykryciu słów kluczowych.
+GitHub release aggregator. Polls GitHub Atom feeds, filters the content and publishes a single combined Atom feed for RSS readers (e.g. FreshRSS). Optionally sends Apprise notifications when a new release matches alert keywords.
 
 ## Endpoints
 
-| Endpoint | Opis |
+| Endpoint | Description |
 |---|---|
-| `GET /feed` | Atom feed ze wszystkimi release'ami |
-| `GET /image/{plik}` | Serwowanie obrazków z `config/images/` |
-| `GET /` | Health check — zwraca `ok` |
+| `GET /feed` | Combined Atom feed with all releases |
+| `GET /image/{file}` | Serves images from `config/image/` |
+| `GET /` | Health check — returns `ok` |
 
-## Struktura plików
+## File layout
 
 ```
 releasefeed/
 ├── config/
-│   ├── config.yaml       # konfiguracja
-│   ├── state.json        # stan powiadomień (echo '{}' > config/state.json)
-│   └── images/           # obrazki per feed (webp, png, svg)
+│   ├── config.yaml       # configuration
+│   ├── state.json        # notification state (auto-created on first run)
+│   └── image/            # per-feed images (webp, png, svg)
 ├── internal/
 ├── Dockerfile
 ├── docker-compose.yml
 └── main.go
 ```
 
-## Konfiguracja
+## Configuration
 
 ### server
 
-| Pole | Opis |
+| Field | Description |
 |---|---|
-| `port` | Port HTTP (domyślnie `8080`) |
-| `base_url` | Publiczny adres serwera — używany do budowania URL obrazków |
+| `port` | HTTP port (default `8080`) |
+| `base_url` | Public server address — used to build image URLs |
 
 ### apprise
 
-| Pole | Opis |
+| Field | Description |
 |---|---|
-| `url` | URL do Apprise API |
-| `tags` | Domyślne tagi dla powiadomień |
+| `url` | Apprise API URL |
+| `tags` | Default notification tags |
 
 ### defaults
 
-| Pole | Opis |
+| Field | Description |
 |---|---|
-| `fetch_interval` | Jak często pobierać feed (np. `30m`, `1h`, `6h`) |
-| `alert_keywords` | Słowa kluczowe triggerujące powiadomienie |
-| `exclude_sections` | Sekcje do wycięcia z każdego feeda |
+| `fetch_interval` | How often to poll feeds (e.g. `30m`, `1h`, `6h`) |
+| `alert_keywords` | Keywords that trigger a notification |
+| `exclude_sections` | Sections stripped from every feed |
 
 ### feeds
 
-| Pole | Wymagane | Opis |
+| Field | Required | Description |
 |---|---|---|
-| `name` | tak | Nazwa wyświetlana w feedzie |
-| `url` | tak | URL do GitHub Atom feed (`/releases.atom`) |
-| `fetch_interval` | nie | Nadpisuje `defaults.fetch_interval` |
-| `image` | nie | Nazwa pliku z `config/images/` |
-| `exclude_sections` | nie | Dodatkowe sekcje do wycięcia — mergowane z `defaults.exclude_sections` |
-| `regex_remove` | nie | Wyrażenia regularne — pasujące fragmenty HTML są usuwane |
-| `alert_keywords` | nie | Mergowane z `defaults.alert_keywords` |
-| `apprise_tags` | nie | Nadpisuje globalne `apprise.tags` |
+| `name` | yes | Display name used in the feed |
+| `url` | yes | GitHub Atom feed URL (`/releases.atom`) |
+| `fetch_interval` | no | Overrides `defaults.fetch_interval` |
+| `image` | no | File name from `config/image/` |
+| `exclude_sections` | no | Extra sections to strip — merged with `defaults.exclude_sections` |
+| `regex_remove` | no | Regular expressions — matching HTML fragments are removed |
+| `alert_keywords` | no | Merged with `defaults.alert_keywords` |
+| `apprise_tags` | no | Overrides global `apprise.tags` |
 
-## Merge defaults
+## Merging defaults
 
-`alert_keywords` i `exclude_sections` są zawsze **mergowane** — per feed dodaje do defaults, nie zastępuje. Duplikaty są usuwane.
+`alert_keywords` and `exclude_sections` are always **merged** — per-feed values add to the defaults instead of replacing them. Duplicates are removed.
 
 ```yaml
 defaults:
@@ -77,28 +77,34 @@ defaults:
 feeds:
   - name: "Hyprland"
     alert_keywords:
-      - "critical"          # razem: breaking, security, critical
+      - "critical"          # effective: breaking, security, critical
     exclude_sections:
-      - "one-time donators" # razem: sponsors, donators, one-time donators
+      - "one-time donators" # effective: sponsors, donators, one-time donators
 ```
 
-## Filtrowanie sekcji
+## Section filtering
 
-Sekcje wykrywane są na podstawie tagów `<h1>`–`<h6>` w HTML z GitHuba. Dopasowanie jest case-insensitive i częściowe — `"sponsors"` wycina `"Diamond Sponsors"`.
+Sections are detected from `<h1>`–`<h6>` tags and bold-paragraph pseudo-headings (`<p><strong>Sponsors</strong></p>`) in the HTML GitHub ships. Matching is case-insensitive and partial — `"sponsors"` also removes `"Diamond Sponsors"`.
 
-Tekst przed pierwszą sekcją (preambuła) jest zawsze zachowany.
+Removing a section also removes its subsections: cutting an `<h2>` drops everything up to the next heading of the same or higher level, including any `<h3>`/`<h4>` inside.
 
-## Powiadomienia Apprise
+Text before the first section (the preamble) is always kept.
 
-Powiadomienie wysyłane gdy:
-- release jest nowy (nie widziany w `state.json`) i tytuł lub treść zawiera słowo kluczowe z `alert_keywords`
+## Feed stability
 
-Treść powiadomienia: tytuł `[NazwaFeeda] wersja` + link do release'a.
+Editing a release on GitHub bumps its `<updated>` timestamp, which would resurface old releases as new in RSS readers. releasefeed pins the timestamp it first saw for each release, so edits upstream don't reorder the feed.
 
-## Uruchomienie
+## Apprise notifications
+
+A notification is sent when a release is new (not present in `state.json`) and its title or content contains one of the `alert_keywords`.
+
+Notification content: `[FeedName] version` title plus a link to the release.
+
+On a fresh (empty) `state.json` the first poll only records existing releases without notifying, so a redeploy never floods you with alerts about old releases.
+
+## Running
 
 ```bash
-echo '{}' > config/state.json
 docker compose up -d
 docker logs releasefeed -f
 ```
