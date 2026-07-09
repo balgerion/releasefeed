@@ -79,7 +79,7 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	if cfg.Server.Port == "" {
-		cfg.Server.Port = "8080"
+		cfg.Server.Port = "880"
 	}
 	if cfg.Defaults.FetchInterval == "" {
 		cfg.Defaults.FetchInterval = "1h"
