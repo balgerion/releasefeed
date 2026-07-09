@@ -17,7 +17,9 @@ type State struct {
 
 func NewState(path string) (*State, error) {
 	data, err := os.ReadFile(path)
-	if err != nil {
+	if os.IsNotExist(err) {
+		data = []byte("[]")
+	} else if err != nil {
 		return nil, err
 	}
 	s := &State{path: path, seen: make(map[string]bool)}
@@ -28,6 +30,12 @@ func NewState(path string) (*State, error) {
 		s.seen[k] = true
 	}
 	return s, nil
+}
+
+func (s *State) Empty() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.keys) == 0
 }
 
 func (s *State) Seen(id string) bool {

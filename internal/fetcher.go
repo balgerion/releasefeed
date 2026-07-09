@@ -30,6 +30,9 @@ func Fetch(feedName, url string) ([]Release, error) {
 			Title:    item.Title,
 			URL:      item.Link,
 		}
+		if r.ID == "" {
+			r.ID = item.Link
+		}
 		if item.Content != "" {
 			r.Content = item.Content
 		} else {

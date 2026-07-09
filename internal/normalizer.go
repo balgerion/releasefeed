@@ -1,18 +1,17 @@
 package internal
 
 import (
-	"html"
 	"regexp"
 	"strings"
 )
 
 var (
 	multiNLRe = regexp.MustCompile(`\n{3,}`)
-	hTagRe    = regexp.MustCompile(`(?i)<(h[1-6])[^>]*>(.*?)</h[1-6]>`)
+	headingRe = regexp.MustCompile(`(?is)<h([1-6])[^>]*>(.*?)</h[1-6]>|<p[^>]*>\s*<(?:strong|b)[^>]*>(.*?)</(?:strong|b)>\s*:?\s*</p>`)
 )
 
 func Normalize(r Release, cfg Feed) Release {
-	content := html.UnescapeString(r.Content)
+	content := r.Content
 
 	if len(cfg.ExcludeSections) > 0 {
 		content = excludeSectionsHTML(content, cfg.ExcludeSections)
@@ -29,26 +28,36 @@ func Normalize(r Release, cfg Feed) Release {
 }
 
 func excludeSectionsHTML(content string, names []string) string {
-	parts := hTagRe.Split(content, -1)
-	matches := hTagRe.FindAllStringSubmatchIndex(content, -1)
+	matches := headingRe.FindAllStringSubmatchIndex(content, -1)
 	if len(matches) == 0 {
 		return content
 	}
 
 	var result strings.Builder
-	if matches[0][0] > 0 {
-		result.WriteString(content[:matches[0][0]])
-	}
+	result.WriteString(content[:matches[0][0]])
 
+	skipLevel := 0
 	for i, m := range matches {
-		tag := content[m[2]:m[3]]
-		heading := content[m[4]:m[5]]
-		if !matchesAny(heading, names) {
-			result.WriteString("<" + tag + ">" + heading + "</" + tag + ">")
-			if i+1 < len(parts) {
-				result.WriteString(parts[i+1])
-			}
+		level, heading := 6, ""
+		if m[2] >= 0 {
+			level = int(content[m[2]] - '0')
+			heading = content[m[4]:m[5]]
+		} else {
+			heading = content[m[6]:m[7]]
 		}
+		if skipLevel > 0 && level > skipLevel {
+			continue
+		}
+		skipLevel = 0
+		if matchesAny(heading, names) {
+			skipLevel = level
+			continue
+		}
+		end := len(content)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		}
+		result.WriteString(content[m[0]:end])
 	}
 	return result.String()
 }
