@@ -25,6 +25,7 @@ func main() {
 
 	cache := internal.NewCache()
 	app := internal.NewApprise(cfg.Apprise.URL)
+	status := internal.NewStatusBoard()
 	freshState := st.Empty()
 
 	for _, f := range cfg.Feeds {
@@ -38,18 +39,27 @@ func main() {
 			releases, err := internal.Fetch(f.Name, f.URL)
 			if err != nil {
 				log.Printf("[%s] fetch error: %v", f.Name, err)
+				if status.Failure(f.Name, err) == 5 {
+					fail := internal.Release{FeedName: f.Name, Title: "feed failing: " + err.Error(), URL: f.URL}
+					if err := app.Notify(fail, f.AppriseTags, nil); err != nil {
+						log.Printf("[%s] apprise error: %v", f.Name, err)
+					}
+				}
 				return
 			}
 			log.Printf("[%s] got %d releases", f.Name, len(releases))
 			normalized := make([]internal.Release, 0, len(releases))
 			for _, r := range releases {
+				if f.IgnoreTitle(r.Title) {
+					continue
+				}
 				r = internal.Normalize(r, f)
 				r.Image = f.Image
 				if t, ok := st.FirstSeen(r.ID); ok {
 					r.PublishedAt = t
 				} else {
 					log.Printf("[%s] new release: %s", f.Name, r.Title)
-					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); len(matched) > 0 && !quiet {
+					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); (f.NotifyAll || len(matched) > 0) && !quiet {
 						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
 						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
@@ -62,6 +72,7 @@ func main() {
 				normalized = append(normalized, r)
 			}
 			cache.Set(f.Name, normalized)
+			status.Success(f.Name, len(normalized))
 		}
 
 		poll(freshState)
@@ -77,6 +88,7 @@ func main() {
 
 	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
 	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
+	http.HandleFunc("/status", internal.StatusHandler(status))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
