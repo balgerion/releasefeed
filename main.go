@@ -2,10 +2,11 @@ package main
 
 import (
 	"log"
-	"strings"
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
+	"strings"
 	"syscall"
 	"time"
 
@@ -70,6 +71,12 @@ func main() {
 					}
 				}
 				normalized = append(normalized, r)
+			}
+			sort.Slice(normalized, func(i, j int) bool {
+				return normalized[i].PublishedAt.After(normalized[j].PublishedAt)
+			})
+			if len(normalized) > f.MaxEntries {
+				normalized = normalized[:f.MaxEntries]
 			}
 			cache.Set(f.Name, normalized)
 			status.Success(f.Name, len(normalized))
