@@ -48,6 +48,7 @@ func main() {
 				if t, ok := st.FirstSeen(r.ID); ok {
 					r.PublishedAt = t
 				} else {
+					log.Printf("[%s] new release: %s", f.Name, r.Title)
 					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); len(matched) > 0 && !quiet {
 						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
 						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
