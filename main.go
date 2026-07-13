@@ -95,7 +95,7 @@ func main() {
 
 	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
 	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
-	http.HandleFunc("/release", internal.ReleaseHandler(cache))
+	http.HandleFunc("/release/{name}/{title}", internal.ReleaseHandler(cache))
 	http.HandleFunc("/status", internal.StatusHandler(status))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
