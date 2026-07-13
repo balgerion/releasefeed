@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"html"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -24,6 +26,19 @@ func (c *Cache) Set(name string, releases []Release) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.entries[name] = releases
+}
+
+func (c *Cache) Get(id string) (Release, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, releases := range c.entries {
+		for _, r := range releases {
+			if r.ID == id {
+				return r, true
+			}
+		}
+	}
+	return Release{}, false
 }
 
 func (c *Cache) All() []Release {
@@ -65,7 +80,7 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 			}
 			sb.WriteString(`<entry>`)
 			sb.WriteString(fmt.Sprintf(`<title>%s</title>`, xmlEscape("["+rel.FeedName+"] "+rel.Title)))
-			sb.WriteString(fmt.Sprintf(`<link href="%s"/>`, xmlEscape(rel.URL)))
+			sb.WriteString(fmt.Sprintf(`<link href="%s"/>`, xmlEscape(imageBaseURL+"/release?id="+url.QueryEscape(rel.ID))))
 			sb.WriteString(fmt.Sprintf(`<id>%s</id>`, xmlEscape(rel.ID)))
 			sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, rel.PublishedAt.Format(time.RFC3339)))
 			if src != "" {
@@ -79,5 +94,21 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 		sb.WriteString(`</feed>`)
 		w.Header().Set("Content-Type", "application/atom+xml; charset=utf-8")
 		w.Write([]byte(sb.String()))
+	}
+}
+
+func ReleaseHandler(cache *Cache) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rel, ok := cache.Get(r.URL.Query().Get("id"))
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s</title></head><body><article><h1>%s</h1><p><a href="%s">View on GitHub</a></p>%s</article></body></html>`,
+			html.EscapeString("["+rel.FeedName+"] "+rel.Title),
+			html.EscapeString("["+rel.FeedName+"] "+rel.Title),
+			html.EscapeString(rel.URL),
+			rel.Content)
 	}
 }
