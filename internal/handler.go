@@ -28,14 +28,12 @@ func (c *Cache) Set(name string, releases []Release) {
 	c.entries[name] = releases
 }
 
-func (c *Cache) Get(id string) (Release, bool) {
+func (c *Cache) Get(feed, title string) (Release, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	for _, releases := range c.entries {
-		for _, r := range releases {
-			if r.ID == id {
-				return r, true
-			}
+	for _, r := range c.entries[feed] {
+		if r.Title == title {
+			return r, true
 		}
 	}
 	return Release{}, false
@@ -80,7 +78,7 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 			}
 			sb.WriteString(`<entry>`)
 			sb.WriteString(fmt.Sprintf(`<title>%s</title>`, xmlEscape("["+rel.FeedName+"] "+rel.Title)))
-			sb.WriteString(fmt.Sprintf(`<link href="%s"/>`, xmlEscape(imageBaseURL+"/release?id="+url.QueryEscape(rel.ID))))
+			sb.WriteString(fmt.Sprintf(`<link href="%s"/>`, xmlEscape(imageBaseURL+"/release/"+url.PathEscape(rel.FeedName)+"/"+url.PathEscape(rel.Title))))
 			sb.WriteString(fmt.Sprintf(`<id>%s</id>`, xmlEscape(rel.ID)))
 			sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, rel.PublishedAt.Format(time.RFC3339)))
 			if src != "" {
@@ -99,7 +97,7 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 
 func ReleaseHandler(cache *Cache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rel, ok := cache.Get(r.URL.Query().Get("id"))
+		rel, ok := cache.Get(r.PathValue("name"), r.PathValue("title"))
 		if !ok {
 			http.NotFound(w, r)
 			return
