@@ -7,6 +7,7 @@ GitHub release aggregator. Polls GitHub Atom feeds, filters the content and publ
 | Endpoint | Description |
 |---|---|
 | `GET /feed` | Combined Atom feed with all releases |
+| `GET /release?id=...` | Plain HTML page for one release — feed entry links point here so reader-mode scraping gets the filtered content instead of github.com clutter; includes a "View on GitHub" link |
 | `GET /status` | JSON status per feed: last successful fetch, entry count, last error, consecutive failures |
 | `GET /image/{file}` | Serves images from `config/image/` |
 | `GET /` | Health check — returns `ok` |
