@@ -3,7 +3,7 @@
 ```text
 README: Written by AI (hate doing this).
 Code: Mostly written by hand! I'm using this project to learn Golang, 
-      so the code is probably a bit messy.
+      so the code is probably a bit messy nd definitely not as "perfect" as what an AI would spit out.
 
 Want to contribute? Awesome! But please follow these two rules:
 1. No AI-generated PRs: Please write your code by hand.
