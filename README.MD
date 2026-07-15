@@ -8,6 +8,7 @@ Code: Mostly written by hand! I'm using this project to learn Golang,
 Want to contribute? Awesome! But please follow these two rules:
 1. No AI-generated PRs: Please write your code by hand.
 2. Explain your changes: Clarify exactly what your code does. I need to understand it to learn!
+```
 
 GitHub release aggregator. Polls GitHub Atom feeds, filters the content and publishes a single combined Atom feed for RSS readers (e.g. FreshRSS). Optionally sends Apprise notifications when a new release matches alert keywords.
 
