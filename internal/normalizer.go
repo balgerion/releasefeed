@@ -6,12 +6,13 @@ import (
 )
 
 var (
-	multiNLRe = regexp.MustCompile(`\n{3,}`)
-	headingRe = regexp.MustCompile(`(?is)<h([1-6])[^>]*>(.*?)</h[1-6]>|<p[^>]*>\s*<(?:strong|b)[^>]*>(.*?)</(?:strong|b)>\s*:?\s*</p>`)
+	multiNLRe    = regexp.MustCompile(`\n{3,}`)
+	headingRe    = regexp.MustCompile(`(?is)<h([1-6])[^>]*>(.*?)</h[1-6]>|<p[^>]*>\s*<(?:strong|b)[^>]*>(.*?)</(?:strong|b)>\s*:?\s*</p>`)
+	privateImgRe = regexp.MustCompile(`https://private-user-images\.githubusercontent\.com/\d+/\d+-([0-9a-fA-F-]+)\.[A-Za-z0-9]+\?[^"\s<]*`)
 )
 
 func Normalize(r Release, cfg Feed) Release {
-	content := r.Content
+	content := privateImgRe.ReplaceAllString(r.Content, "https://github.com/user-attachments/assets/$1")
 
 	if len(cfg.ExcludeSections) > 0 {
 		content = excludeSectionsHTML(content, cfg.ExcludeSections)
