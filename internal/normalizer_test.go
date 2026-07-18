@@ -25,6 +25,15 @@ func TestExcludeSections(t *testing.T) {
 	}
 }
 
+func TestRewritePrivateImages(t *testing.T) {
+	in := `<img src="https://private-user-images.githubusercontent.com/34356590/611930431-daba6e6c-5df3-4e5b-b7a1-c737ca265f0e.webp?jwt=eyJ0.abc-123_x" alt="banner">`
+	out := Normalize(Release{Content: in}, Feed{})
+	want := `<img src="https://github.com/user-attachments/assets/daba6e6c-5df3-4e5b-b7a1-c737ca265f0e" alt="banner">`
+	if out.Content != want {
+		t.Errorf("got: %s", out.Content)
+	}
+}
+
 func TestStatePersistsFirstSeenTime(t *testing.T) {
 	path := t.TempDir() + "/state.json"
 	first := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
