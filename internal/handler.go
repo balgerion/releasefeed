@@ -103,7 +103,7 @@ func ReleaseHandler(cache *Cache) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s</title></head><body><article><h1>%s</h1><p><a href="%s">View on GitHub</a></p>%s</article></body></html>`,
+		fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark"><title>%s</title><style>body{max-width:44rem;margin:0 auto;padding:1rem;font-family:system-ui,sans-serif;line-height:1.5}img{max-width:100%%;height:auto}pre{overflow-x:auto}</style></head><body><article><h1>%s</h1><p><a href="%s">View on GitHub</a></p>%s</article></body></html>`,
 			html.EscapeString("["+rel.FeedName+"] "+rel.Title),
 			html.EscapeString("["+rel.FeedName+"] "+rel.Title),
 			html.EscapeString(rel.URL),
