@@ -17,7 +17,7 @@ GitHub release aggregator. Polls GitHub Atom feeds, filters the content and publ
 | Endpoint | Description |
 |---|---|
 | `GET /feed` | Combined Atom feed with all releases |
-| `GET /release/{name}/{title}` | Plain HTML page for one release (e.g. `/release/Hyprland/v0.55.4`) — feed entry links point here so reader-mode scraping gets the filtered content instead of github.com clutter; includes a "View on GitHub" link |
+| `GET /release/{name}/{title}` | Minimal HTML page for one release (e.g. `/release/Hyprland/v0.55.4`) — feed entry links point here so reader-mode scraping gets the filtered content instead of github.com clutter; includes a "View on GitHub" link, follows the system light/dark theme |
 | `GET /status` | JSON status per feed: last successful fetch, entry count, last error, consecutive failures |
 | `GET /image/{file}` | Serves images from `config/image/` |
 | `GET /` | Health check — returns `ok` |
@@ -106,6 +106,10 @@ Sections are detected from `<h1>`–`<h6>` tags and bold-paragraph pseudo-headin
 Removing a section also removes its subsections: cutting an `<h2>` drops everything up to the next heading of the same or higher level, including any `<h3>`/`<h4>` inside.
 
 Text before the first section (the preamble) is always kept.
+
+## Images
+
+GitHub ships release-note images as `private-user-images.githubusercontent.com` URLs signed with a JWT that expires after a few minutes, so they always show up broken in RSS readers. releasefeed rewrites them to the stable `github.com/user-attachments/assets/...` form, which GitHub redirects to a freshly signed URL on every request.
 
 ## Feed stability
 
