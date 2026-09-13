@@ -109,6 +109,8 @@ Text before the first section (the preamble) is always kept.
 
 ## Images
 
+Each entry carries its image as `<media:thumbnail>`, as a small `<img>` at the top of the content, and as an Atom `<link rel="enclosure">` with the MIME type taken from the file extension. Readers that only look at enclosures for thumbnails (FreshRSS exposes enclosures through its Google Reader API, not `media:thumbnail`) pick it up from there.
+
 GitHub ships release-note images as `private-user-images.githubusercontent.com` URLs signed with a JWT that expires after a few minutes, so they always show up broken in RSS readers. releasefeed rewrites them to the stable `github.com/user-attachments/assets/...` form, which GitHub redirects to a freshly signed URL on every request.
 
 ## Feed stability
