@@ -5,8 +5,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"html"
+	"mime"
 	"net/http"
 	"net/url"
+	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -58,6 +60,14 @@ func xmlEscape(s string) string {
 	return b.String()
 }
 
+func imageType(src string) string {
+	u, err := url.Parse(src)
+	if err != nil {
+		return ""
+	}
+	return mime.TypeByExtension(path.Ext(u.Path))
+}
+
 func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		releases := cache.All()
@@ -83,6 +93,9 @@ func FeedHandler(cache *Cache, imageBaseURL string) http.HandlerFunc {
 			sb.WriteString(fmt.Sprintf(`<updated>%s</updated>`, rel.PublishedAt.Format(time.RFC3339)))
 			if src != "" {
 				sb.WriteString(fmt.Sprintf(`<media:thumbnail url="%s"/>`, xmlEscape(src)))
+				if t := imageType(src); t != "" {
+					sb.WriteString(fmt.Sprintf(`<link rel="enclosure" type="%s" href="%s"/>`, t, xmlEscape(src)))
+				}
 			}
 			sb.WriteString(`<content type="html"><![CDATA[`)
 			sb.WriteString(strings.ReplaceAll(body, "]]>", "]]]]><![CDATA[>"))
