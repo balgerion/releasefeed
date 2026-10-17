@@ -28,6 +28,22 @@ func main() {
 	app := internal.NewApprise(cfg.Apprise.URL)
 	status := internal.NewStatusBoard()
 
+	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
+	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
+	http.HandleFunc("/release/{name}/{title}", internal.ReleaseHandler(cache))
+	http.HandleFunc("/status", internal.StatusHandler(status))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
+	go func() {
+		log.Printf("listening on :%s", cfg.Server.Port)
+		if err := http.ListenAndServe(":"+cfg.Server.Port, nil); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	for _, f := range cfg.Feeds {
 		interval, err := time.ParseDuration(f.FetchInterval)
 		if err != nil {
@@ -96,22 +112,6 @@ func main() {
 			}
 		}()
 	}
-
-	http.Handle("/image/", http.StripPrefix("/image/", http.FileServer(http.Dir("config/image"))))
-	http.HandleFunc("/feed", internal.FeedHandler(cache, cfg.Server.BaseURL))
-	http.HandleFunc("/release/{name}/{title}", internal.ReleaseHandler(cache))
-	http.HandleFunc("/status", internal.StatusHandler(status))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-	})
-
-	go func() {
-		log.Printf("listening on :%s", cfg.Server.Port)
-		if err := http.ListenAndServe(":"+cfg.Server.Port, nil); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
