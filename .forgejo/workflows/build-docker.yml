@@ -16,5 +16,18 @@ jobs:
         run: |
           docker build -t git.balgeriada.com/balgerion/releasefeed:latest .
           docker push git.balgeriada.com/balgerion/releasefeed:latest
+      - name: tell the image updater
+        env:
+          WEBHOOK_SECRET: ${{ secrets.IMAGE_UPDATER_WEBHOOK }}
+        run: |
+          apk add --no-cache curl
+          event=$(printf '{"specversion":"1.0","type":"com.balgeriada.image.pushed","source":"%s/%s","id":"%s","data":{"registry":"git.balgeriada.com","repository":"balgerion/releasefeed","tag":"latest"}}' \
+            "${GITHUB_SERVER_URL}" "${GITHUB_REPOSITORY}" "${GITHUB_RUN_ID}")
+          curl -fsS --max-time 30 -X POST \
+            -H 'Content-Type: application/cloudevents+json' \
+            -H "X-Webhook-Secret: ${WEBHOOK_SECRET}" \
+            --data "${event}" \
+            'http://argocd-image-updater-webhook.argocd.svc.cluster.local:8082/webhook?type=cloudevents' \
+            || echo "::warning::Image Updater webhook failed, the digest arrives with the nightly run"
       - name: cleanup
         run: docker system prune -af
