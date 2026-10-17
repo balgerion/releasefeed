@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -42,13 +43,10 @@ func TestStatePersistsFirstSeenTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !st.Empty() {
-		t.Error("new state should be empty")
+	if st.Known("Forgejo") {
+		t.Error("new state should not know any feed")
 	}
-	if err := st.Mark("a", first); err != nil {
-		t.Fatal(err)
-	}
-	if err := st.Mark("a", first.Add(48*time.Hour)); err != nil {
+	if err := st.Replace("Forgejo", map[string]time.Time{"a": first}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -56,8 +54,25 @@ func TestStatePersistsFirstSeenTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, ok := st2.FirstSeen("a")
+	got, ok := st2.FirstSeen("Forgejo", "a")
 	if !ok || !got.Equal(first) {
 		t.Errorf("first-seen time not persisted: %v %v", got, ok)
+	}
+	if _, ok := st2.FirstSeen("Renovate", "a"); ok || st2.Known("Renovate") {
+		t.Error("ids must not leak between feeds")
+	}
+}
+
+func TestStateStartsFreshFromOldFormat(t *testing.T) {
+	path := t.TempDir() + "/state.json"
+	if err := os.WriteFile(path, []byte(`{"a":"2026-01-01T00:00:00Z"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	st, err := NewState(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Known("a") {
+		t.Error("old flat state must not be read as feeds")
 	}
 }

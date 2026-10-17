@@ -27,7 +27,6 @@ func main() {
 	cache := internal.NewCache()
 	app := internal.NewApprise(cfg.Apprise.URL)
 	status := internal.NewStatusBoard()
-	freshState := st.Empty()
 
 	for _, f := range cfg.Feeds {
 		interval, err := time.ParseDuration(f.FetchInterval)
@@ -35,7 +34,7 @@ func main() {
 			log.Fatalf("invalid interval for feed %s: %v", f.Name, err)
 		}
 
-		poll := func(quiet bool) {
+		poll := func() {
 			log.Printf("[%s] fetching", f.Name)
 			releases, err := internal.Fetch(f.Name, f.URL)
 			if err != nil {
@@ -49,6 +48,8 @@ func main() {
 				return
 			}
 			log.Printf("[%s] got %d releases", f.Name, len(releases))
+			quiet := !st.Known(f.Name)
+			seen := make(map[string]time.Time, len(releases))
 			normalized := make([]internal.Release, 0, len(releases))
 			for _, r := range releases {
 				if f.IgnoreTitle(r.Title) {
@@ -56,7 +57,7 @@ func main() {
 				}
 				r = internal.Normalize(r, f)
 				r.Image = f.Image
-				if t, ok := st.FirstSeen(r.ID); ok {
+				if t, ok := st.FirstSeen(f.Name, r.ID); ok {
 					r.PublishedAt = t
 				} else {
 					log.Printf("[%s] new release: %s", f.Name, r.Title)
@@ -66,11 +67,12 @@ func main() {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
 						}
 					}
-					if err := st.Mark(r.ID, r.PublishedAt); err != nil {
-						log.Printf("state error: %v", err)
-					}
 				}
+				seen[r.ID] = r.PublishedAt
 				normalized = append(normalized, r)
+			}
+			if err := st.Replace(f.Name, seen); err != nil {
+				log.Printf("state error: %v", err)
 			}
 			sort.Slice(normalized, func(i, j int) bool {
 				return normalized[i].PublishedAt.After(normalized[j].PublishedAt)
@@ -82,13 +84,13 @@ func main() {
 			status.Success(f.Name, len(normalized))
 		}
 
-		poll(freshState)
+		poll()
 
 		go func() {
 			t := time.NewTicker(interval)
 			defer t.Stop()
 			for range t.C {
-				poll(false)
+				poll()
 			}
 		}()
 	}
