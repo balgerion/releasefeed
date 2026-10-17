@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -25,5 +26,22 @@ func TestFeedEnclosure(t *testing.T) {
 	}
 	if strings.Count(out, `rel="enclosure"`) != 2 {
 		t.Errorf("release without image must not get an enclosure: %s", out)
+	}
+}
+
+func TestReleasesFilter(t *testing.T) {
+	cache := NewCache()
+	cache.Set("Renovate", []Release{{FeedName: "Renovate", Title: "45.0.0", Content: "BREAKING CHANGES: node 24", PublishedAt: time.Now()}})
+	cache.Set("Forgejo", []Release{{FeedName: "Forgejo", Title: "v13.0.1", Content: "bug fixes", PublishedAt: time.Now()}})
+	for query, want := range map[string]int{"": 2, "?feed=renovate": 1, "?q=breaking": 1, "?feed=Forgejo&q=breaking": 0} {
+		rec := httptest.NewRecorder()
+		ReleasesHandler(cache)(rec, httptest.NewRequest("GET", "/api/releases"+query, nil))
+		var got []apiRelease
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != want {
+			t.Errorf("%q: got %d releases, want %d", query, len(got), want)
+		}
 	}
 }
