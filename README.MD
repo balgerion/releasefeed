@@ -18,6 +18,7 @@ GitHub release aggregator. Polls GitHub Atom feeds, filters the content and publ
 |---|---|
 | `GET /feed` | Combined Atom feed with all releases |
 | `GET /release/{name}/{title}` | Minimal HTML page for one release (e.g. `/release/Hyprland/v0.55.4`) — feed entry links point here so reader-mode scraping gets the filtered content instead of github.com clutter; includes a "View on GitHub" link, follows the system light/dark theme |
+| `GET /api/releases` | JSON list of the releases currently shown in `/feed`, newest first, with `feed`, `title`, `url`, `published` and the filtered `content`. `?feed=<name>` keeps one feed (case-insensitive), `?q=<text>` keeps releases whose title or content contains the text (case-insensitive); both combine, e.g. `/api/releases?feed=Renovate&q=breaking` |
 | `GET /status` | JSON status per feed: last successful fetch, entry count, last error, consecutive failures |
 | `GET /image/{file}` | Serves images from `config/image/` |
 | `GET /` | Health check — returns `ok` |
@@ -119,15 +120,21 @@ Editing a release on GitHub bumps its `<updated>` timestamp, which would resurfa
 
 ## Apprise notifications
 
-A notification is sent when a release is new (not present in `state.json`) and its title or content contains one of the `alert_keywords`, or the feed has `notify_all: true`.
+`state.json` holds, for every feed, exactly the release IDs that feed returned on its last successful poll, with the timestamp first seen for each. Its size follows the feeds themselves, so nothing is ever evicted while a feed still lists it.
+
+A notification is sent when a release is new (not among its feed's IDs in `state.json`) and its title or content contains one of the `alert_keywords`, or the feed has `notify_all: true`.
 
 Notification content: `[FeedName] version` title plus a link to the release.
 
-On a fresh (empty) `state.json` the first poll only records existing releases without notifying, so a redeploy never floods you with alerts about old releases.
+The first poll of a feed that has no entry in `state.json` yet (a newly added feed, or a fresh state file) only records its releases without notifying, so adding feeds or redeploying never floods you with alerts about old releases. A `state.json` in the older flat format is discarded on start in the same way.
+
+A release whose notification fails is not recorded, so the next poll sends it again until Apprise accepts it.
 
 When a feed fails to fetch 5 times in a row, a single Apprise notification is sent so a silently broken feed doesn't go unnoticed. The failure counter resets on the next successful fetch and is visible under `/status`.
 
 ## Running
+
+The HTTP server starts before the first poll, so `/` answers at once and `/feed`, `/api/releases` and `/status` fill in feed by feed while the first round runs.
 
 ```bash
 docker compose up -d

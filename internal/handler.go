@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"html"
@@ -121,5 +122,32 @@ func ReleaseHandler(cache *Cache) http.HandlerFunc {
 			html.EscapeString("["+rel.FeedName+"] "+rel.Title),
 			html.EscapeString(rel.URL),
 			rel.Content)
+	}
+}
+
+type apiRelease struct {
+	Feed      string    `json:"feed"`
+	Title     string    `json:"title"`
+	URL       string    `json:"url"`
+	Published time.Time `json:"published"`
+	Content   string    `json:"content"`
+}
+
+func ReleasesHandler(cache *Cache) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		feed := r.URL.Query().Get("feed")
+		q := strings.ToLower(r.URL.Query().Get("q"))
+		list := []apiRelease{}
+		for _, rel := range cache.All() {
+			if feed != "" && !strings.EqualFold(rel.FeedName, feed) {
+				continue
+			}
+			if q != "" && !strings.Contains(strings.ToLower(rel.Title+" "+rel.Content), q) {
+				continue
+			}
+			list = append(list, apiRelease{rel.FeedName, rel.Title, rel.URL, rel.PublishedAt, rel.Content})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(list)
 	}
 }
