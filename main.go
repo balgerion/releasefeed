@@ -65,6 +65,8 @@ func main() {
 						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
 						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
+							normalized = append(normalized, r)
+							continue
 						}
 					}
 				}
