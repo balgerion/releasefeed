@@ -136,7 +136,15 @@ When a feed fails to fetch 5 times in a row, a single Apprise notification is se
 
 The HTTP server starts before the first poll, so `/` answers at once and `/feed`, `/api/releases` and `/status` fill in feed by feed while the first round runs.
 
+Locally, with the bundled `docker-compose.yml`:
+
 ```bash
 docker compose up -d
 docker logs releasefeed -f
 ```
+
+In the cluster it runs as the Deployment `releasefeed` in `applications/releasefeed` of `balgeriada/k3s`. `config.yaml` lives in that directory and reaches the Pod as a ConfigMap mounted over `config/config.yaml`, so a change to the feeds is a pull request there and rolls the Pod; `state.json` and `image/` stay on the claim `releasefeed-config` mounted at `config/`. Notifications go to the `releasefeed` route of `apprise-gw`, which hands them to Apprise.
+
+## Building
+
+The `build-docker` workflow (`.forgejo/workflows/build-docker.yml`, started by hand) builds and pushes `git.balgeriada.com/balgerion/releasefeed:latest`, then posts a cloudevent to the Argo CD Image Updater webhook with the Actions secret `IMAGE_UPDATER_WEBHOOK`, so the new digest is committed to `balgeriada/k3s` within minutes instead of with the nightly run. Without the secret the step only warns.
