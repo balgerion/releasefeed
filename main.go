@@ -19,7 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	st, err := internal.NewState("config/state.json")
+	st, err := internal.NewState("config/state.json", "config/alerted.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,6 +67,7 @@ func main() {
 			log.Printf("[%s] got %d releases", f.Name, len(releases))
 			quiet := !st.Known(f.Name)
 			seen := make(map[string]time.Time, len(releases))
+			alerted := make(map[string]bool, len(releases))
 			normalized := make([]internal.Release, 0, len(releases))
 			for _, r := range releases {
 				if f.IgnoreTitle(r.Title) {
@@ -74,23 +75,33 @@ func main() {
 				}
 				r = internal.Normalize(r, f)
 				r.Image = f.Image
-				if t, ok := st.FirstSeen(f.Name, r.ID); ok {
+				t, known := st.FirstSeen(f.Name, r.ID)
+				if known {
 					r.PublishedAt = t
 				} else {
 					log.Printf("[%s] new release: %s", f.Name, r.Title)
-					if matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords); (f.NotifyAll || len(matched) > 0) && !quiet {
+				}
+				done := quiet || st.Alerted(f.Name, r.ID)
+				if !done {
+					matched := internal.MatchedKeywords(r.Title+" "+r.Content, f.AlertKeywords)
+					if len(matched) > 0 || (f.NotifyAll && !known) {
 						log.Printf("[%s] alert: %s (keywords: %s)", f.Name, r.Title, strings.Join(matched, ", "))
 						if err := app.Notify(r, f.AppriseTags, matched); err != nil {
 							log.Printf("[%s] apprise error: %v", f.Name, err)
+							if known {
+								seen[r.ID] = r.PublishedAt
+							}
 							normalized = append(normalized, r)
 							continue
 						}
+						done = true
 					}
 				}
 				seen[r.ID] = r.PublishedAt
+				alerted[r.ID] = done
 				normalized = append(normalized, r)
 			}
-			if err := st.Replace(f.Name, seen); err != nil {
+			if err := st.Replace(f.Name, seen, alerted); err != nil {
 				log.Printf("state error: %v", err)
 			}
 			sort.Slice(normalized, func(i, j int) bool {

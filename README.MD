@@ -30,6 +30,7 @@ releasefeed/
 ├── config/
 │   ├── config.yaml       # configuration
 │   ├── state.json        # notification state (auto-created on first run)
+│   ├── alerted.json      # releases already notified (auto-created on first run)
 │   └── image/            # per-feed images (webp, png, svg)
 ├── internal/
 ├── Dockerfile
@@ -122,13 +123,15 @@ Editing a release on GitHub bumps its `<updated>` timestamp, which would resurfa
 
 `state.json` holds, for every feed, exactly the release IDs that feed returned on its last successful poll, with the timestamp first seen for each. Its size follows the feeds themselves, so nothing is ever evicted while a feed still lists it.
 
-A notification is sent when a release is new (not among its feed's IDs in `state.json`) and its title or content contains one of the `alert_keywords`, or the feed has `notify_all: true`.
+A notification is sent once per release: when its title or content contains one of the `alert_keywords`, or when it is new and the feed has `notify_all: true`. The keywords are checked on every poll for every release the feed still lists, not only on the first one, because projects often publish a release first and add the "Breaking changes" section to its notes later (qui v1.33.0 on 2026-10-19). `alerted.json` next to `state.json` records, per feed, which of those releases were already notified, so an edit that keeps or adds keywords never sends a second notification. It follows the feed the same way `state.json` does.
+
+When `alerted.json` does not exist yet, every release already in `state.json` counts as notified, so the first start of this version sends nothing about releases it had seen before.
 
 Notification content: `[FeedName] version` title plus a link to the release.
 
 The first poll of a feed that has no entry in `state.json` yet (a newly added feed, or a fresh state file) only records its releases without notifying, so adding feeds or redeploying never floods you with alerts about old releases. A `state.json` in the older flat format is discarded on start in the same way.
 
-A release whose notification fails is not recorded, so the next poll sends it again until Apprise accepts it.
+A release whose notification fails is not marked as notified, so the next poll sends it again until Apprise accepts it.
 
 When a feed fails to fetch 5 times in a row, a single Apprise notification is sent so a silently broken feed doesn't go unnoticed. The failure counter resets on the next successful fetch and is visible under `/status`.
 

@@ -39,18 +39,18 @@ func TestStatePersistsFirstSeenTime(t *testing.T) {
 	path := t.TempDir() + "/state.json"
 	first := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	st, err := NewState(path)
+	st, err := NewState(path, path+".alerted")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if st.Known("Forgejo") {
 		t.Error("new state should not know any feed")
 	}
-	if err := st.Replace("Forgejo", map[string]time.Time{"a": first}); err != nil {
+	if err := st.Replace("Forgejo", map[string]time.Time{"a": first}, map[string]bool{"a": true}); err != nil {
 		t.Fatal(err)
 	}
 
-	st2, err := NewState(path)
+	st2, err := NewState(path, path+".alerted")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestStateStartsFreshFromOldFormat(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"a":"2026-01-01T00:00:00Z"}`), 0644); err != nil {
 		t.Fatal(err)
 	}
-	st, err := NewState(path)
+	st, err := NewState(path, path+".alerted")
 	if err != nil {
 		t.Fatal(err)
 	}
