@@ -69,10 +69,7 @@ func main() {
 			seen := make(map[string]time.Time, len(releases))
 			alerted := make(map[string]bool, len(releases))
 			normalized := make([]internal.Release, 0, len(releases))
-			for _, r := range releases {
-				if f.IgnoreTitle(r.Title) {
-					continue
-				}
+			for _, r := range f.Filter(releases) {
 				r = internal.Normalize(r, f)
 				r.Image = f.Image
 				t, known := st.FirstSeen(f.Name, r.ID)

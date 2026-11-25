@@ -77,6 +77,7 @@ releasefeed/
 | `regex_remove` | no | Regular expressions — matching HTML fragments are removed |
 | `alert_keywords` | no | Merged with `defaults.alert_keywords` |
 | `ignore_titles` | no | Merged with `defaults.ignore_titles` |
+| `ignore_backports` | no | `true` = skip releases made for an older `major.minor` line after a newer line is out, see [Backports](#backports) |
 | `notify_all` | no | `true` = notify on every new release, not only on keyword match |
 | `apprise_tags` | no | Overrides global `apprise.tags` |
 
@@ -108,6 +109,17 @@ Sections are detected from `<h1>`–`<h6>` tags and bold-paragraph pseudo-headin
 Removing a section also removes its subsections: cutting an `<h2>` drops everything up to the next heading of the same or higher level, including any `<h3>`/`<h4>` inside.
 
 Text before the first section (the preamble) is always kept.
+
+Backports
+---------
+
+Projects that maintain several release lines publish a patch for each of them, often on the same day: Argo CD `v3.6.3`, `v3.5.9` and `v3.4.15`, or k3s `v1.37.2`, `v1.36.6`, `v1.35.10` and `v1.34.13`. Whoever runs the newest line has no use for the others, and their notes repeat the same alert keywords.
+
+With `ignore_backports: true` a release is skipped, like one matched by `ignore_titles`, when the same feed lists a release of a higher `major.minor` line that was published before it. So `v3.5.9` goes once any `v3.6.x` older than it is in the feed, while the history of a single line stays: `v2.3.0` published before `v2.4.0` existed is not a backport.
+
+The line is the first `number.number` in the title, with or without a leading `v`, and the text in front of it names the product. Releases are compared only within one product, so a feed that carries `unifi-mcp-shared v0.6.45` next to `UniFi Network MCP v0.9.0` loses neither. Titles without a version are never skipped, and releases dropped by `ignore_titles` do not count: a `v3.7.0-rc1` that the defaults ignore does not turn `v3.6.3` into a backport.
+
+Two limits. The rule only sees what the upstream feed lists, ten entries on GitHub, so a backport is kept when no release of the newer line is among them. And it assumes you follow the newest line: while you stay on an older one on purpose, leave the option off for that feed, or its patches are skipped too. It is off by default because a project that changes its version scheme to smaller numbers (OpenDTU went from `2026.05.18` to `v26.11.11`) would have every new release skipped.
 
 ## Images
 
