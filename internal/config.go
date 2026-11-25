@@ -34,6 +34,7 @@ type Feed struct {
 	AppriseTags     []string         `yaml:"apprise_tags"`
 	NotifyAll       bool             `yaml:"notify_all"`
 	IgnoreTitles    []string         `yaml:"ignore_titles"`
+	IgnoreBackports bool             `yaml:"ignore_backports"`
 	regexRemove     []*regexp.Regexp `yaml:"-"`
 	ignoreTitles    []*regexp.Regexp `yaml:"-"`
 }
